@@ -72,9 +72,9 @@
     .error { min-height: 1.5em; color: #a02c25; font-size: .9rem; margin: 9px 0 0; }
     .calculate { width: 100%; border: none; border-radius: 11px; background: #246249; color: white; font-weight: 750; padding: 14px 20px; margin-top: 11px; }
     .calculate:hover { background: #1a4e39; }
-    .diagram { background: #f1f4ed; border-radius: 17px; min-height: 270px; padding: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .diagram svg { width: 100%; max-width: 385px; height: auto; }
-    .diagram p { color: #65746a; font-size: .82rem; margin: 0; text-align: center; }
+    .diagram { background: #f1f4ed; border-radius: 17px; padding: 18px 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .diagram svg { width: 100%; max-width: 560px; height: auto; }
+    .diagram p { color: #526b59; font-size: .84rem; margin: 8px 10px 0; text-align: center; line-height: 1.45; }
     .result { margin-top: 25px; padding: 22px 24px; background: #eaf3eb; border-top: 1px solid #d7e6da; }
     .result .caption { display: block; font-weight: 750; color: #3a6d51; font-size: .89rem; }
     .value { display: block; font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -.055em; line-height: 1.15; margin: 7px 0; }
@@ -130,18 +130,40 @@
             <p class="error" id="error" role="alert"></p>
             <button class="calculate" id="calculate-button" type="submit">Volumen berechnen</button>
           </form>
-          <div class="diagram" aria-label="Schaubild einer Mauer mit Länge, Breite und Höhe">
-            <svg viewBox="0 0 390 255" role="img" aria-labelledby="diagram-title"><title id="diagram-title">Mauermaße: Länge vorne, Breite als Wanddicke, Höhe senkrecht</title>
-              <path d="M66 85 L285 85 L333 57 L115 57 Z" fill="#cadbcd" stroke="#4e7c65" stroke-width="2"/>
-              <path d="M66 85 L285 85 L285 210 L66 210 Z" fill="#9cbea7" stroke="#4e7c65" stroke-width="2"/>
-              <path d="M285 85 L333 57 L333 181 L285 210 Z" fill="#6c9c7b" stroke="#4e7c65" stroke-width="2"/>
-              <path d="M66 127 H285 M66 168 H285 M66 105 H285 M66 148 H285 M66 190 H285" stroke="#769e81" stroke-width="1" opacity=".65"/>
-              <path d="M65 222 H286 M66 217 V227 M285 217 V227 M49 85 V210 M44 85 H54 M44 210 H54 M292 72 L343 42 M289 67 L295 77 M339 37 L347 47" stroke="#245a42" stroke-width="2" fill="none"/>
-              <text x="175" y="245" fill="#214a36" font-size="15" font-weight="700" text-anchor="middle">Länge</text>
-              <text x="22" y="150" fill="#214a36" font-size="15" font-weight="700" text-anchor="middle" transform="rotate(-90 22 150)">Höhe</text>
-              <text x="330" y="25" fill="#214a36" font-size="15" font-weight="700" text-anchor="middle">Breite</text>
+          <div class="diagram">
+            <svg viewBox="0 0 540 345" role="img" aria-labelledby="diagram-title diagram-desc">
+              <title id="diagram-title">Gemauerte Wand mit Fenster, Tür und Maßpfeilen</title>
+              <desc id="diagram-desc">Die Wand hat Länge, Höhe und Wanddicke. Fenster und Tür haben jeweils Länge und Höhe. Ihre Tiefe ist immer gleich der Wanddicke. Die Zeichnung ist nicht maßstabsgetreu.</desc>
+              <defs>
+                <pattern id="bricks" width="76" height="40" patternUnits="userSpaceOnUse">
+                  <rect width="76" height="40" fill="#afcdb5"/>
+                  <path d="M0 0 H76 M0 20 H76 M0 40 H76 M38 0 V20 M0 20 V40 M76 20 V40" stroke="#638970" stroke-width="2.5"/>
+                </pattern>
+                <mask id="wall-cutouts"><rect x="76" y="70" width="370" height="190" fill="white"/><rect x="155" y="118" width="96" height="72" fill="black"/><rect x="332" y="156" width="68" height="104" fill="black"/></mask>
+                <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><path d="M0 0 L6 3 L0 6 Z" fill="#245a42"/></marker>
+                <marker id="opening-arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><path d="M0 0 L6 3 L0 6 Z" fill="#956939"/></marker>
+              </defs>
+              <path d="M76 70 L446 70 L475 51 L105 51 Z" fill="#d2e3d3" stroke="#50745b" stroke-width="2"/>
+              <path d="M446 70 L475 51 L475 241 L446 260 Z" fill="#7da98a" stroke="#50745b" stroke-width="2"/>
+              <rect x="76" y="70" width="370" height="190" fill="url(#bricks)" mask="url(#wall-cutouts)"/>
+              <path d="M76 70 H446 V260 H76 Z" fill="none" stroke="#4d7457" stroke-width="2.4"/>
+              <path d="M155 118 H251 V190 H155 Z M332 156 H400 V260 H332 Z" fill="none" stroke="#4d7457" stroke-width="3"/>
+              <path d="M155 118 L171 108 H267 L251 118 M251 118 L267 108 V180 L251 190 M332 156 L348 146 H416 L400 156 M400 156 L416 146 V250 L400 260" fill="#d2e2d4" stroke="#61846a" stroke-width="1.5"/>
+              <path d="M157 120 H249 V188 H157 Z" fill="#e6f2f1" stroke="#83aca7" stroke-width="1.3"/>
+              <path d="M203 120 V188 M157 154 H249" stroke="#83aca7" stroke-width="2"/>
+              <path d="M334 158 H398 V258 H334 Z" fill="#ece8d9" stroke="#ab9b7d" stroke-width="1.3"/>
+              <circle cx="388" cy="214" r="3" fill="#ab9b7d"/>
+              <path d="M76 300 H446 M46 70 V260 M447 68 L476 49" fill="none" stroke="#245a42" stroke-width="1.7" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+              <text x="261" y="319" text-anchor="middle" fill="#245a42" font-size="15" font-weight="700">Länge der Wand</text>
+              <text x="28" y="168" transform="rotate(-90 28 168)" text-anchor="middle" fill="#245a42" font-size="15" font-weight="700">Höhe der Wand</text>
+              <text x="476" y="33" text-anchor="middle" fill="#245a42" font-size="13" font-weight="700">Wanddicke</text>
+              <path d="M156 207 H250 M140 119 V189 M333 278 H399 M416 157 V258" fill="none" stroke="#956939" stroke-width="1.5" marker-start="url(#opening-arrow)" marker-end="url(#opening-arrow)"/>
+              <text x="203" y="226" text-anchor="middle" fill="#805626" font-size="12" font-weight="700">Fensterlänge</text>
+              <text x="126" y="153" text-anchor="middle" transform="rotate(-90 126 153)" fill="#805626" font-size="12" font-weight="700">Fensterhöhe</text>
+              <text x="366" y="294" text-anchor="middle" fill="#805626" font-size="12" font-weight="700">Türlänge</text>
+              <text x="431" y="207" text-anchor="middle" transform="rotate(-90 431 207)" fill="#805626" font-size="12" font-weight="700">Türhöhe</text>
             </svg>
-            <p>Breite = Dicke der Mauer, nicht die Fläche eines Steins.</p>
+            <p><strong>Fenster- und Türtiefe = Wanddicke.</strong> Die Öffnungen gehen durch die ganze Wand. Skizze nicht maßstabsgetreu.</p>
           </div>
         </div>
         <div class="wall-list" id="wall-list" hidden><h3>Gespeicherte Wände</h3><p class="muted">Du kannst Wände bearbeiten, entfernen oder weitere hinzufügen.</p><ul id="wall-items"></ul></div>
