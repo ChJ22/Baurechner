@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f0">
+  <title>Baurechner – Mauerwerk</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #192521; background: #f6f5f0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 25px 0 18px; border-bottom: 1px solid #dddcd3; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 1.06rem; font-weight: 800; letter-spacing: -.02em; }
+    .brand-mark { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: #214b3e; color: #fff; font-size: 23px; }
+    main { padding: 42px 0 72px; }
+    .eyebrow { color: #477462; text-transform: uppercase; letter-spacing: .13em; font-size: .76rem; font-weight: 800; }
+    h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.07; letter-spacing: -.055em; margin: 12px 0; }
+    .intro { color: #617068; margin: 0 0 30px; line-height: 1.55; }
+    .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0 0 22px; }
+    .tab { text-align: left; border-radius: 17px; border: 1px solid #dadfd7; background: #fff; padding: 18px 20px; min-height: 102px; transition: border-color .15s, box-shadow .15s; }
+    .tab:hover { border-color: #497965; }
+    .tab[aria-selected="true"] { border: 2px solid #27674e; box-shadow: 0 5px 18px #153c2714; padding: 17px 19px; }
+    .tab strong { display: block; font-size: 1.1rem; }
+    .tab small { display: block; color: #65746a; margin-top: 5px; line-height: 1.4; }
+    .panel { background: #fff; border: 1px solid #e1e4dc; border-radius: 23px; box-shadow: 0 16px 45px #2b42300a; overflow: hidden; }
+    .panel-inner { padding: clamp(22px, 4vw, 38px); }
+    h2 { font-size: 1.5rem; letter-spacing: -.035em; margin: 0 0 7px; }
+    .muted { color: #637169; line-height: 1.5; margin: 0; }
+    .mode-label { font-size: .88rem; font-weight: 750; margin: 29px 0 10px; }
+    .modes { display: flex; gap: 9px; flex-wrap: wrap; }
+    .mode { border-radius: 10px; padding: 10px 15px; border: 1px solid #cbdad0; color: #215640; background: #ebf5ed; font-weight: 700; }
+    .mode[disabled] { cursor: default; color: #858e87; border-color: #e2e5e1; background: #f5f6f4; font-weight: 500; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .88fr); gap: 32px; margin-top: 33px; align-items: start; }
+    .form-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 16px; }
+    h3 { font-size: 1.05rem; margin: 0; }
+    .unit { border: 1px solid #ccd6cd; border-radius: 9px; padding: 7px 9px; background: white; color: #263e31; }
+    .fields { display: grid; gap: 15px; }
+    label.field { display: block; font-weight: 700; font-size: .91rem; }
+    .field span { display: block; margin-bottom: 7px; }
+    .input-wrap { position: relative; }
+    input { display: block; width: 100%; padding: 13px 48px 13px 14px; color: #192521; background: #fff; border: 1px solid #cbd4cc; border-radius: 10px; outline: none; font-size: 1.05rem; }
+    input:focus, select:focus-visible, button:focus-visible { outline: 3px solid #8cbea1; outline-offset: 2px; }
+    .suffix { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #66776c; font-weight: 500; }
+    .error { min-height: 1.5em; color: #a02c25; font-size: .9rem; margin: 9px 0 0; }
+    .calculate { width: 100%; border: none; border-radius: 11px; background: #246249; color: white; font-weight: 750; padding: 14px 20px; margin-top: 11px; }
+    .calculate:hover { background: #1a4e39; }
+    .diagram { background: #f1f4ed; border-radius: 17px; min-height: 270px; padding: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .diagram svg { width: 100%; max-width: 385px; height: auto; }
+    .diagram p { color: #65746a; font-size: .82rem; margin: 0; text-align: center; }
+    .result { margin-top: 25px; padding: 22px 24px; background: #eaf3eb; border-top: 1px solid #d7e6da; }
+    .result .caption { display: block; font-weight: 750; color: #3a6d51; font-size: .89rem; }
+    .value { display: block; font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -.055em; line-height: 1.15; margin: 7px 0; }
+    .formula { color: #4f6758; font-size: .91rem; margin: 0; }
+    .empty { padding: 65px 30px; text-align: center; }
+    .empty-icon { width: 62px; height: 62px; margin: 0 auto 18px; border-radius: 18px; background: #eaf3eb; display: grid; place-items: center; font-size: 28px; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) { main { padding-top: 28px; } .workspace { grid-template-columns: 1fr; gap: 24px; } .tabs { gap: 9px; } .tab { padding: 15px; min-height: 112px; } .tab[aria-selected="true"] { padding: 14px; } .panel-inner { padding: 22px; } }
+  </style>
+</head>
+<body>
+  <header><div class="wrap brand"><span class="brand-mark" aria-hidden="true">▦</span>Baurechner</div></header>
+  <main class="wrap">
+    <span class="eyebrow">Projektplanung</span>
+    <h1>Was möchtest du berechnen?</h1>
+    <p class="intro">Wähle einen Bereich und trage deine Maße ein.</p>
+    <div class="tabs" role="tablist" aria-label="Rechnerbereich">
+      <button class="tab" id="tab-wall" type="button" role="tab" aria-controls="wall" aria-selected="true"><strong>Mauerwerk</strong><small>Wandvolumen berechnen</small></button>
+      <button class="tab" id="tab-cable" type="button" role="tab" aria-controls="cable" aria-selected="false"><strong>Leitungsstrecken</strong><small>Längen je Leitungstyp sammeln · bald verfügbar</small></button>
+    </div>
+
+    <section class="panel" id="wall" role="tabpanel" aria-labelledby="tab-wall">
+      <div class="panel-inner">
+        <h2>Mauerwerk</h2>
+        <p class="muted">Berechne zuerst das Volumen der geplanten Mauer.</p>
+        <p class="mode-label">Was möchtest du berechnen?</p>
+        <div class="modes" aria-label="Berechnungsart"><button class="mode" type="button" aria-pressed="true">Wandvolumen</button><button class="mode" type="button" disabled title="Folgt in einem späteren Schritt">Steinbedarf · folgt später</button></div>
+        <div class="workspace">
+          <form id="calculator" novalidate>
+            <div class="form-title"><h3>Maße der Mauer</h3><label>Einheit <select class="unit" id="unit" aria-label="Einheit aller Maße"><option value="m">Meter (m)</option><option value="cm">Zentimeter (cm)</option></select></label></div>
+            <div class="fields">
+              <label class="field" for="length"><span>Länge</span><div class="input-wrap"><input id="length" inputmode="decimal" autocomplete="off" placeholder="z. B. 5,50" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
+              <label class="field" for="width"><span>Breite / Wanddicke</span><div class="input-wrap"><input id="width" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,30" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
+              <label class="field" for="height"><span>Höhe</span><div class="input-wrap"><input id="height" inputmode="decimal" autocomplete="off" placeholder="z. B. 2,50" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
+            </div>
+            <p class="error" id="error" role="alert"></p>
+            <button class="calculate" type="submit">Volumen berechnen</button>
+          </form>
+          <div class="diagram" aria-label="Schaubild einer Mauer mit Länge, Breite und Höhe">
+            <svg viewBox="0 0 390 255" role="img" aria-labelledby="diagram-title"><title id="diagram-title">Mauermaße: Länge vorne, Breite als Wanddicke, Höhe senkrecht</title>
+              <path d="M66 85 L285 85 L333 57 L115 57 Z" fill="#cadbcd" stroke="#4e7c65" stroke-width="2"/>
+              <path d="M66 85 L285 85 L285 210 L66 210 Z" fill="#9cbea7" stroke="#4e7c65" stroke-width="2"/>
+              <path d="M285 85 L333 57 L333 181 L285 210 Z" fill="#6c9c7b" stroke="#4e7c65" stroke-width="2"/>
+              <path d="M66 127 H285 M66 168 H285 M66 105 H285 M66 148 H285 M66 190 H285" stroke="#769e81" stroke-width="1" opacity=".65"/>
+              <path d="M65 222 H286 M66 217 V227 M285 217 V227 M49 85 V210 M44 85 H54 M44 210 H54 M292 72 L343 42 M289 67 L295 77 M339 37 L347 47" stroke="#245a42" stroke-width="2" fill="none"/>
+              <text x="175" y="245" fill="#214a36" font-size="15" font-weight="700" text-anchor="middle">Länge</text>
+              <text x="22" y="150" fill="#214a36" font-size="15" font-weight="700" text-anchor="middle" transform="rotate(-90 22 150)">Höhe</text>
+              <text x="330" y="25" fill="#214a36" font-size="15" font-weight="700" text-anchor="middle">Breite</text>
+            </svg>
+            <p>Breite = Dicke der Mauer, nicht die Fläche eines Steins.</p>
+          </div>
+        </div>
+      </div>
+      <div class="result" aria-live="polite"><span class="caption">Volumen der Mauer</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p></div>
+    </section>
+
+    <section class="panel empty" id="cable" role="tabpanel" aria-labelledby="tab-cable" hidden><div class="empty-icon" aria-hidden="true">〰</div><h2>Leitungsstrecken</h2><p class="muted">Hier kannst du später einzelne Leitungsstrecken erfassen und die Längen nach Leitungstyp zusammenrechnen.</p></section>
+  </main>
+  <script>
+    const wallTab = document.getElementById('tab-wall');
+    const cableTab = document.getElementById('tab-cable');
+    const wall = document.getElementById('wall');
+    const cable = document.getElementById('cable');
+    function showTab(which) {
+      const wallActive = which === 'wall';
+      wallTab.setAttribute('aria-selected', String(wallActive));
+      cableTab.setAttribute('aria-selected', String(!wallActive));
+      wall.hidden = !wallActive;
+      cable.hidden = wallActive;
+    }
+    wallTab.addEventListener('click', () => showTab('wall'));
+    cableTab.addEventListener('click', () => showTab('cable'));
+    [wallTab, cableTab].forEach((tab, index) => tab.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        const next = index === 0 ? cableTab : wallTab;
+        next.focus(); next.click();
+      }
+    }));
+
+    const ids = ['length', 'width', 'height'];
+    const inputs = ids.map(id => document.getElementById(id));
+    const unit = document.getElementById('unit');
+    const error = document.getElementById('error');
+    const volume = document.getElementById('volume');
+    const formula = document.getElementById('formula');
+    let lastUnit = 'm';
+    const parseDimension = value => {
+      const normalized = value.trim().replace(',', '.');
+      if (!/^\d+(?:\.\d+)?$/.test(normalized)) return NaN;
+      return Number(normalized);
+    };
+    const format = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 5 }).format(value);
+    unit.addEventListener('change', () => {
+      const factor = lastUnit === 'm' ? 100 : 0.01;
+      inputs.forEach(input => {
+        const number = parseDimension(input.value);
+        if (Number.isFinite(number)) input.value = String(Math.round(number * factor * 100000) / 100000).replace('.', ',');
+      });
+      document.querySelectorAll('.suffix').forEach(el => el.textContent = unit.value);
+      lastUnit = unit.value;
+      if (inputs.every(input => input.value.trim())) calculate();
+    });
+    inputs.forEach(input => input.addEventListener('input', () => {
+      error.textContent = '';
+      input.removeAttribute('aria-invalid');
+      volume.textContent = '– m³';
+      formula.textContent = 'Länge × Breite × Höhe';
+    }));
+    function calculate() {
+      const values = inputs.map(input => parseDimension(input.value));
+      inputs.forEach(input => input.removeAttribute('aria-invalid'));
+      const invalidIndex = values.findIndex(value => !Number.isFinite(value) || value <= 0);
+      if (invalidIndex !== -1) {
+        error.textContent = 'Bitte gib für alle drei Maße eine Zahl größer als 0 ein.';
+        inputs[invalidIndex].setAttribute('aria-invalid', 'true');
+        inputs[invalidIndex].focus();
+        volume.textContent = '– m³';
+        formula.textContent = 'Länge × Breite × Höhe';
+        return;
+      }
+      const metres = values.map(value => unit.value === 'cm' ? value / 100 : value);
+      const result = metres[0] * metres[1] * metres[2];
+      if (!Number.isFinite(result)) {
+        error.textContent = 'Die Maße sind zu groß. Bitte prüfe deine Eingaben.';
+        return;
+      }
+      error.textContent = '';
+      volume.textContent = `${format(result)} m³`;
+      formula.textContent = `${metres.map(value => format(value) + ' m').join(' × ')} = ${format(result)} m³`;
+    }
+    document.getElementById('calculator').addEventListener('submit', event => { event.preventDefault(); calculate(); });
+  </script>
+</body>
+</html>
