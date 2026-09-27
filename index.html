@@ -32,7 +32,13 @@
     .mode-label { font-size: .88rem; font-weight: 750; margin: 29px 0 10px; }
     .modes { display: flex; gap: 9px; flex-wrap: wrap; }
     .mode { border-radius: 10px; padding: 10px 15px; border: 1px solid #cbdad0; color: #215640; background: #ebf5ed; font-weight: 700; }
-    .mode[disabled] { cursor: default; color: #858e87; border-color: #e2e5e1; background: #f5f6f4; font-weight: 500; }
+    .mode[aria-pressed="false"] { color: #53675a; border-color: #d7dfd8; background: #f5f6f4; font-weight: 600; }
+    .stone-fields { border-top: 1px solid #e4e9e2; margin-top: 25px; padding-top: 24px; }
+    .stone-fields .muted { font-size: .88rem; margin: 6px 0 17px; }
+    .stone-result { border-top: 1px solid #cedfce; margin-top: 18px; padding-top: 18px; }
+    .stone-result dl { display: grid; grid-template-columns: 1fr auto; gap: 9px 14px; margin: 0 0 18px; font-size: .94rem; }
+    .stone-result dt { color: #4f6758; }
+    .stone-result dd { margin: 0; font-weight: 700; text-align: right; }
     .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .88fr); gap: 32px; margin-top: 33px; align-items: start; }
     .form-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 16px; }
     h3 { font-size: 1.05rem; margin: 0; }
@@ -74,9 +80,9 @@
     <section class="panel" id="wall" role="tabpanel" aria-labelledby="tab-wall">
       <div class="panel-inner">
         <h2>Mauerwerk</h2>
-        <p class="muted">Berechne zuerst das Volumen der geplanten Mauer.</p>
+        <p class="muted">Berechne das Volumen der geplanten Mauer oder die theoretische Anzahl der Steine.</p>
         <p class="mode-label">Was möchtest du berechnen?</p>
-        <div class="modes" aria-label="Berechnungsart"><button class="mode" type="button" aria-pressed="true">Wandvolumen</button><button class="mode" type="button" disabled title="Folgt in einem späteren Schritt">Steinbedarf · folgt später</button></div>
+        <div class="modes" aria-label="Berechnungsart"><button class="mode" id="mode-volume" type="button" aria-pressed="true">Wandvolumen</button><button class="mode" id="mode-stones" type="button" aria-pressed="false">Anzahl der Steine</button></div>
         <div class="workspace">
           <form id="calculator" novalidate>
             <div class="form-title"><h3>Maße der Mauer</h3><label>Einheit <select class="unit" id="unit" aria-label="Einheit aller Maße"><option value="m">Meter (m)</option><option value="cm">Zentimeter (cm)</option></select></label></div>
@@ -85,8 +91,17 @@
               <label class="field" for="width"><span>Breite / Wanddicke</span><div class="input-wrap"><input id="width" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,30" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
               <label class="field" for="height"><span>Höhe</span><div class="input-wrap"><input id="height" inputmode="decimal" autocomplete="off" placeholder="z. B. 2,50" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
             </div>
+            <div class="stone-fields" id="stone-fields" hidden>
+              <h3>Maße eines Steins</h3>
+              <p class="muted">Bitte die tatsächlichen Außenmaße des Steins in Zentimetern eingeben.</p>
+              <div class="fields">
+                <label class="field" for="stone-length"><span>Länge des Steins</span><div class="input-wrap"><input id="stone-length" inputmode="decimal" autocomplete="off" placeholder="z. B. 60" aria-describedby="error"><span class="suffix" aria-hidden="true">cm</span></div></label>
+                <label class="field" for="stone-width"><span>Breite / Tiefe des Steins</span><div class="input-wrap"><input id="stone-width" inputmode="decimal" autocomplete="off" placeholder="z. B. 30" aria-describedby="error"><span class="suffix" aria-hidden="true">cm</span></div></label>
+                <label class="field" for="stone-height"><span>Höhe des Steins</span><div class="input-wrap"><input id="stone-height" inputmode="decimal" autocomplete="off" placeholder="z. B. 25" aria-describedby="error"><span class="suffix" aria-hidden="true">cm</span></div></label>
+              </div>
+            </div>
             <p class="error" id="error" role="alert"></p>
-            <button class="calculate" type="submit">Volumen berechnen</button>
+            <button class="calculate" id="calculate-button" type="submit">Volumen berechnen</button>
           </form>
           <div class="diagram" aria-label="Schaubild einer Mauer mit Länge, Breite und Höhe">
             <svg viewBox="0 0 390 255" role="img" aria-labelledby="diagram-title"><title id="diagram-title">Mauermaße: Länge vorne, Breite als Wanddicke, Höhe senkrecht</title>
@@ -103,7 +118,13 @@
           </div>
         </div>
       </div>
-      <div class="result" aria-live="polite"><span class="caption">Volumen der Mauer</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p></div>
+      <div class="result" aria-live="polite"><span class="caption">Volumen der Mauer</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p>
+        <div class="stone-result" id="stone-result" hidden>
+          <dl><dt>Volumen eines Steins</dt><dd id="stone-volume">–</dd><dt>Rechnung</dt><dd id="stone-division">–</dd></dl>
+          <span class="caption">Benötigte Steine (aufgerundet)</span><output class="value" id="stone-count">– Stück</output>
+          <p class="formula">Theoretischer Wert ohne Fugen, Öffnungen und Verschnitt.</p>
+        </div>
+      </div>
     </section>
 
     <section class="panel empty" id="cable" role="tabpanel" aria-labelledby="tab-cable" hidden><div class="empty-icon" aria-hidden="true">〰</div><h2>Leitungsstrecken</h2><p class="muted">Hier kannst du später einzelne Leitungsstrecken erfassen und die Längen nach Leitungstyp zusammenrechnen.</p></section>
@@ -132,6 +153,13 @@
 
     const ids = ['length', 'width', 'height'];
     const inputs = ids.map(id => document.getElementById(id));
+    const stoneInputs = ['stone-length', 'stone-width', 'stone-height'].map(id => document.getElementById(id));
+    const stoneFields = document.getElementById('stone-fields');
+    const stoneResult = document.getElementById('stone-result');
+    const modeVolume = document.getElementById('mode-volume');
+    const modeStones = document.getElementById('mode-stones');
+    const calculateButton = document.getElementById('calculate-button');
+    let stoneMode = false;
     const unit = document.getElementById('unit');
     const error = document.getElementById('error');
     const volume = document.getElementById('volume');
@@ -143,32 +171,43 @@
       return Number(normalized);
     };
     const format = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 5 }).format(value);
+    const formatCount = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(value);
+    function resetResult() {
+      error.textContent = '';
+      [...inputs, ...stoneInputs].forEach(input => input.removeAttribute('aria-invalid'));
+      volume.textContent = '– m³';
+      formula.textContent = 'Länge × Breite × Höhe';
+      stoneResult.hidden = true;
+    }
+    function setMode(stones) {
+      stoneMode = stones;
+      modeVolume.setAttribute('aria-pressed', String(!stones));
+      modeStones.setAttribute('aria-pressed', String(stones));
+      stoneFields.hidden = !stones;
+      calculateButton.textContent = stones ? 'Steine berechnen' : 'Volumen berechnen';
+      resetResult();
+    }
+    modeVolume.addEventListener('click', () => setMode(false));
+    modeStones.addEventListener('click', () => setMode(true));
     unit.addEventListener('change', () => {
       const factor = lastUnit === 'm' ? 100 : 0.01;
       inputs.forEach(input => {
         const number = parseDimension(input.value);
         if (Number.isFinite(number)) input.value = String(Math.round(number * factor * 100000) / 100000).replace('.', ',');
       });
-      document.querySelectorAll('.suffix').forEach(el => el.textContent = unit.value);
+      document.querySelectorAll('#calculator > .fields .suffix').forEach(el => el.textContent = unit.value);
       lastUnit = unit.value;
-      if (inputs.every(input => input.value.trim())) calculate();
+      resetResult();
     });
-    inputs.forEach(input => input.addEventListener('input', () => {
-      error.textContent = '';
-      input.removeAttribute('aria-invalid');
-      volume.textContent = '– m³';
-      formula.textContent = 'Länge × Breite × Höhe';
-    }));
+    [...inputs, ...stoneInputs].forEach(input => input.addEventListener('input', resetResult));
     function calculate() {
       const values = inputs.map(input => parseDimension(input.value));
-      inputs.forEach(input => input.removeAttribute('aria-invalid'));
+      resetResult();
       const invalidIndex = values.findIndex(value => !Number.isFinite(value) || value <= 0);
       if (invalidIndex !== -1) {
         error.textContent = 'Bitte gib für alle drei Maße eine Zahl größer als 0 ein.';
         inputs[invalidIndex].setAttribute('aria-invalid', 'true');
         inputs[invalidIndex].focus();
-        volume.textContent = '– m³';
-        formula.textContent = 'Länge × Breite × Höhe';
         return;
       }
       const metres = values.map(value => unit.value === 'cm' ? value / 100 : value);
@@ -180,6 +219,26 @@
       error.textContent = '';
       volume.textContent = `${format(result)} m³`;
       formula.textContent = `${metres.map(value => format(value) + ' m').join(' × ')} = ${format(result)} m³`;
+      if (!stoneMode) return;
+      const stoneDimensions = stoneInputs.map(input => parseDimension(input.value));
+      const invalidStone = stoneDimensions.findIndex(value => !Number.isFinite(value) || value <= 0);
+      if (invalidStone !== -1) {
+        error.textContent = 'Bitte gib auch für alle drei Steinmaße eine Zahl größer als 0 ein.';
+        stoneInputs[invalidStone].setAttribute('aria-invalid', 'true');
+        stoneInputs[invalidStone].focus();
+        return;
+      }
+      const stoneCubicCentimetres = stoneDimensions.reduce((product, value) => product * value, 1);
+      const stoneCubicMetres = stoneCubicCentimetres / 1000000;
+      const exactCount = result / stoneCubicMetres;
+      if (!Number.isFinite(exactCount) || !Number.isSafeInteger(Math.ceil(exactCount))) {
+        error.textContent = 'Diese Maße ergeben eine zu große Stückzahl. Bitte prüfe deine Eingaben.';
+        return;
+      }
+      document.getElementById('stone-volume').textContent = `${format(stoneCubicCentimetres)} cm³`;
+      document.getElementById('stone-division').textContent = `${formatCount(exactCount)} Steine`;
+      document.getElementById('stone-count').textContent = `${new Intl.NumberFormat('de-DE').format(Math.ceil(exactCount))} Stück`;
+      stoneResult.hidden = false;
     }
     document.getElementById('calculator').addEventListener('submit', event => { event.preventDefault(); calculate(); });
   </script>
