@@ -41,13 +41,23 @@
     .stone-result dd { margin: 0; font-weight: 700; text-align: right; }
     .add-wall { width: 100%; border: 1px solid #7da68b; color: #245b42; background: #f0f7f0; border-radius: 11px; padding: 12px 18px; margin-top: 17px; font-weight: 700; }
     .add-wall:hover { background: #e4f2e6; }
+    .openings { margin-top: 25px; border-top: 1px solid #e4e9e2; padding-top: 22px; }
+    .openings .muted { font-size: .88rem; margin: 6px 0 14px; }
+    .opening-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+    .opening-actions button { border: 1px solid #a9c6b0; border-radius: 9px; color: #245b42; background: #f0f7f0; padding: 9px 12px; font-weight: 700; }
+    .opening-row { padding: 14px; margin: 12px 0; background: #f8faf7; border: 1px solid #e1e8df; border-radius: 12px; }
+    .opening-row .opening-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .opening-row .opening-heading button, .cancel-edit { border: 0; background: transparent; color: #9c362f; font-weight: 650; padding: 7px; }
+    .opening-row .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
     .wall-list { margin-top: 28px; border-top: 1px solid #e4e9e2; padding-top: 22px; }
     .wall-list h3 { margin-bottom: 6px; }
     .wall-list ul { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
     .wall-list li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid #e0e8df; border-radius: 11px; }
     .wall-list li span { line-height: 1.4; }
     .wall-list li small { display: block; color: #66776c; }
-    .wall-list li button { border: 0; background: transparent; color: #9c362f; padding: 9px 5px; font-weight: 650; }
+    .wall-list li .wall-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+    .wall-list li button { border: 0; background: transparent; color: #245b42; padding: 9px 5px; font-weight: 650; }
+    .wall-list li button.remove { color: #9c362f; }
     .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .88fr); gap: 32px; margin-top: 33px; align-items: start; }
     .form-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 16px; }
     h3 { font-size: 1.05rem; margin: 0; }
@@ -72,7 +82,7 @@
     .empty { padding: 65px 30px; text-align: center; }
     .empty-icon { width: 62px; height: 62px; margin: 0 auto 18px; border-radius: 18px; background: #eaf3eb; display: grid; place-items: center; font-size: 28px; }
     [hidden] { display: none !important; }
-    @media (max-width: 720px) { main { padding-top: 28px; } .workspace { grid-template-columns: 1fr; gap: 24px; } .tabs { gap: 9px; } .tab { padding: 15px; min-height: 112px; } .tab[aria-selected="true"] { padding: 14px; } .panel-inner { padding: 22px; } }
+    @media (max-width: 720px) { main { padding-top: 28px; } .workspace { grid-template-columns: 1fr; gap: 24px; } .tabs { gap: 9px; } .tab { padding: 15px; min-height: 112px; } .tab[aria-selected="true"] { padding: 14px; } .panel-inner { padding: 22px; } .opening-row .fields { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -100,7 +110,14 @@
               <label class="field" for="width"><span>Breite / Wanddicke</span><div class="input-wrap"><input id="width" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,30" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
               <label class="field" for="height"><span>Höhe</span><div class="input-wrap"><input id="height" inputmode="decimal" autocomplete="off" placeholder="z. B. 2,50" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
             </div>
+            <div class="openings">
+              <h3>Fenster und Türen abziehen</h3>
+              <p class="muted">Je Öffnung nur Länge und Höhe eingeben. Die Tiefe entspricht automatisch der Wanddicke. Öffnungen dürfen sich nicht überlappen.</p>
+              <div id="opening-items"></div>
+              <div class="opening-actions"><button type="button" id="add-window">+ Fenster</button><button type="button" id="add-door">+ Tür</button></div>
+            </div>
             <button class="add-wall" id="add-wall" type="button">Wand speichern und weitere hinzufügen</button>
+            <button class="cancel-edit" id="cancel-edit" type="button" hidden>Bearbeiten abbrechen</button>
             <div class="stone-fields" id="stone-fields" hidden>
               <h3>Maße eines Steins</h3>
               <p class="muted">Bitte die tatsächlichen Außenmaße des Steins in Zentimetern eingeben.</p>
@@ -127,13 +144,13 @@
             <p>Breite = Dicke der Mauer, nicht die Fläche eines Steins.</p>
           </div>
         </div>
-        <div class="wall-list" id="wall-list" hidden><h3>Gespeicherte Wände</h3><p class="muted">Du kannst eine Wand entfernen oder oben weitere Maße eingeben.</p><ul id="wall-items"></ul></div>
+        <div class="wall-list" id="wall-list" hidden><h3>Gespeicherte Wände</h3><p class="muted">Du kannst Wände bearbeiten, entfernen oder weitere hinzufügen.</p><ul id="wall-items"></ul></div>
       </div>
-      <div class="result" aria-live="polite"><span class="caption" id="volume-caption">Volumen der Mauer</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p>
+      <div class="result" aria-live="polite"><span class="caption" id="volume-caption">Volumen der Mauer nach Abzügen</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p><p class="formula" id="deduction"></p>
         <div class="stone-result" id="stone-result" hidden>
           <dl><dt>Volumen eines Steins</dt><dd id="stone-volume">–</dd><dt>Rechnung</dt><dd id="stone-division">–</dd></dl>
           <span class="caption">Benötigte Steine (aufgerundet)</span><output class="value" id="stone-count">– Stück</output>
-          <p class="formula">Theoretischer Wert ohne Fugen, Öffnungen und Verschnitt.</p>
+          <p class="formula">Theoretischer Wert mit Öffnungsabzug; ohne Fugen und Verschnitt.</p>
         </div>
       </div>
     </section>
@@ -178,6 +195,12 @@
     const wallItems = document.getElementById('wall-items');
     const wallList = document.getElementById('wall-list');
     const savedWalls = [];
+    const openingItems = document.getElementById('opening-items');
+    const deduction = document.getElementById('deduction');
+    const addWallButton = document.getElementById('add-wall');
+    const cancelEditButton = document.getElementById('cancel-edit');
+    let draftOpenings = [];
+    let editingIndex = null;
     const wallsKey = 'baurechner-waende-v1';
     function saveWalls() {
       try { localStorage.setItem(wallsKey, JSON.stringify(savedWalls)); } catch (_) { /* Browser ohne lokalen Speicher */ }
@@ -190,11 +213,60 @@
     };
     const format = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 5 }).format(value);
     const formatCount = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(value);
+    const inputValue = value => String(Math.round(value * 100000) / 100000).replace('.', ',');
+    function renderOpenings() {
+      openingItems.replaceChildren();
+      draftOpenings.forEach((opening, index) => {
+        const row = document.createElement('div');
+        row.className = 'opening-row';
+        const heading = document.createElement('div');
+        heading.className = 'opening-heading';
+        const name = document.createElement('strong');
+        name.textContent = `${opening.type === 'door' ? 'Tür' : 'Fenster'} ${index + 1}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = 'Entfernen';
+        remove.addEventListener('click', () => { draftOpenings.splice(index, 1); renderOpenings(); resetResult(); });
+        heading.append(name, remove);
+        const fields = document.createElement('div');
+        fields.className = 'fields';
+        ['length', 'height'].forEach((dimension, n) => {
+          const label = document.createElement('label');
+          label.className = 'field';
+          const title = document.createElement('span');
+          title.textContent = n === 0 ? 'Länge' : 'Höhe';
+          const holder = document.createElement('div');
+          holder.className = 'input-wrap';
+          const field = document.createElement('input');
+          field.inputMode = 'decimal';
+          field.autocomplete = 'off';
+          field.value = opening[dimension];
+          field.setAttribute('aria-label', `${opening.type === 'door' ? 'Tür' : 'Fenster'} ${index + 1}: ${title.textContent}`);
+          field.addEventListener('input', () => { opening[dimension] = field.value; resetResult(); });
+          const suffix = document.createElement('span');
+          suffix.className = 'suffix';
+          suffix.textContent = unit.value;
+          holder.append(field, suffix);
+          label.append(title, holder);
+          fields.append(label);
+          opening[dimension + 'Field'] = field;
+        });
+        row.append(heading, fields);
+        openingItems.append(row);
+      });
+    }
+    ['window', 'door'].forEach(type => document.getElementById(type === 'window' ? 'add-window' : 'add-door').addEventListener('click', () => {
+      draftOpenings.push({ type, length: '', height: '' });
+      renderOpenings();
+      resetResult();
+    }));
     function resetResult() {
       error.textContent = '';
       [...inputs, ...stoneInputs].forEach(input => input.removeAttribute('aria-invalid'));
+      draftOpenings.forEach(opening => [opening.lengthField, opening.heightField].forEach(field => field?.removeAttribute('aria-invalid')));
       volume.textContent = '– m³';
       formula.textContent = 'Länge × Breite × Höhe';
+      deduction.textContent = '';
       stoneResult.hidden = true;
     }
     function renderWallList() {
@@ -205,28 +277,59 @@
         const title = document.createElement('strong');
         const detail = document.createElement('small');
         const remove = document.createElement('button');
-        title.textContent = `Wand ${index + 1}: ${format(wall.volume)} m³`;
-        detail.textContent = `${wall.metres.map(value => format(value) + ' m').join(' × ')}`;
+        title.textContent = `Wand ${index + 1}: ${format(wall.volume)} m³ netto`;
+        detail.textContent = `${wall.metres.map(value => format(value) + ' m').join(' × ')}${wall.openings.length ? ` · ${wall.openings.length} Öffnung(en), Abzug ${format(wall.openVolume)} m³` : ''}`;
         description.append(title, detail);
+        const actions = document.createElement('div');
+        actions.className = 'wall-actions';
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.textContent = 'Bearbeiten';
+        edit.setAttribute('aria-label', `Wand ${index + 1} bearbeiten`);
+        edit.addEventListener('click', () => {
+          editingIndex = index;
+          inputs.forEach((input, n) => input.value = inputValue(wall.metres[n] * (unit.value === 'cm' ? 100 : 1)));
+          draftOpenings = wall.openings.map(opening => ({
+            type: opening.type,
+            length: inputValue(opening.length * (unit.value === 'cm' ? 100 : 1)),
+            height: inputValue(opening.height * (unit.value === 'cm' ? 100 : 1))
+          }));
+          renderOpenings(); renderWallList(); resetResult();
+          document.getElementById('wall-form-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
         remove.type = 'button';
+        remove.className = 'remove';
         remove.textContent = 'Entfernen';
         remove.setAttribute('aria-label', `Wand ${index + 1} entfernen`);
         remove.addEventListener('click', () => {
           savedWalls.splice(index, 1);
+          if (editingIndex === index) clearDraft();
+          else if (editingIndex !== null && editingIndex > index) editingIndex--;
           saveWalls();
           renderWallList();
           resetResult();
           if (savedWalls.length && inputs.every(input => !input.value.trim())) calculate({ skipEmptyStones: true });
         });
-        item.append(description, remove);
+        actions.append(edit, remove);
+        item.append(description, actions);
         wallItems.append(item);
       });
       wallList.hidden = savedWalls.length === 0;
-      document.getElementById('wall-form-title').textContent = `Wand ${savedWalls.length + 1} eingeben`;
-      document.getElementById('volume-caption').textContent = savedWalls.length ? 'Gesamtvolumen aller Wände' : 'Volumen der Mauer';
+      document.getElementById('wall-form-title').textContent = editingIndex === null ? `Wand ${savedWalls.length + 1} eingeben` : `Wand ${editingIndex + 1} bearbeiten`;
+      addWallButton.textContent = editingIndex === null ? 'Wand speichern und weitere hinzufügen' : 'Änderungen an Wand speichern';
+      cancelEditButton.hidden = editingIndex === null;
+      document.getElementById('volume-caption').textContent = savedWalls.length > 1 ? 'Gesamtvolumen aller Wände nach Abzügen' : 'Wandvolumen nach Abzügen';
     }
+    function clearDraft() {
+      editingIndex = null;
+      inputs.forEach(input => input.value = '');
+      draftOpenings = [];
+      renderOpenings();
+      renderWallList();
+    }
+    cancelEditButton.addEventListener('click', () => { clearDraft(); resetResult(); if (savedWalls.length) calculate({ skipEmptyStones: true }); });
     function readCurrentWall(requireWall) {
-      const hasInput = inputs.some(input => input.value.trim());
+      const hasInput = inputs.some(input => input.value.trim()) || draftOpenings.length > 0;
       if (!hasInput && !requireWall) return null;
       const values = inputs.map(input => parseDimension(input.value));
       const invalidIndex = values.findIndex(value => !Number.isFinite(value) || value <= 0);
@@ -242,7 +345,32 @@
         error.textContent = 'Die Wandmaße sind zu groß. Bitte prüfe deine Eingaben.';
         return false;
       }
-      return { metres, volume: wallVolume };
+      const openings = [];
+      let openVolume = 0;
+      for (const opening of draftOpenings) {
+        const length = parseDimension(opening.length);
+        const height = parseDimension(opening.height);
+        if (!Number.isFinite(length) || length <= 0 || !Number.isFinite(height) || height <= 0) {
+          error.textContent = 'Bitte gib für jede Öffnung Länge und Höhe als Zahlen größer als 0 ein.';
+          const field = !Number.isFinite(length) || length <= 0 ? opening.lengthField : opening.heightField;
+          field.setAttribute('aria-invalid', 'true'); field.focus();
+          return false;
+        }
+        const metresLength = unit.value === 'cm' ? length / 100 : length;
+        const metresHeight = unit.value === 'cm' ? height / 100 : height;
+        if (metresLength > metres[0] || metresHeight > metres[2]) {
+          error.textContent = 'Eine Öffnung ist länger oder höher als die Wand. Bitte prüfe die Maße.';
+          opening.lengthField.focus();
+          return false;
+        }
+        openVolume += metresLength * metresHeight * metres[1];
+        openings.push({ type: opening.type, length: metresLength, height: metresHeight });
+      }
+      if (!Number.isFinite(openVolume) || openVolume > wallVolume + 1e-10) {
+        error.textContent = 'Die Öffnungen sind zusammen größer als die Wandfläche. Bitte prüfe die Maße und Überschneidungen.';
+        return false;
+      }
+      return { metres, gross: wallVolume, openings, openVolume, volume: Math.max(0, wallVolume - openVolume) };
     }
     try {
       const stored = JSON.parse(localStorage.getItem(wallsKey) || '[]');
@@ -250,20 +378,25 @@
         if (Array.isArray(wall.metres) && wall.metres.length === 3 &&
             wall.metres.every(value => Number.isFinite(value) && value > 0)) {
           const wallVolume = wall.metres.reduce((product, value) => product * value, 1);
-          if (Number.isFinite(wallVolume)) savedWalls.push({ metres: wall.metres, volume: wallVolume });
+          const openings = Array.isArray(wall.openings) ? wall.openings.filter(opening =>
+            (opening.type === 'window' || opening.type === 'door') &&
+            Number.isFinite(opening.length) && opening.length > 0 && opening.length <= wall.metres[0] &&
+            Number.isFinite(opening.height) && opening.height > 0 && opening.height <= wall.metres[2]) : [];
+          const openVolume = openings.reduce((sum, opening) => sum + opening.length * opening.height * wall.metres[1], 0);
+          if (Number.isFinite(wallVolume) && openVolume <= wallVolume) savedWalls.push({ metres: wall.metres, gross: wallVolume, openings, openVolume, volume: wallVolume - openVolume });
         }
       });
     } catch (_) { /* Ungültige lokale Daten ignorieren */ }
     renderWallList();
     if (savedWalls.length) calculate({ skipEmptyStones: true });
-    document.getElementById('add-wall').addEventListener('click', () => {
+    addWallButton.addEventListener('click', () => {
       resetResult();
       const current = readCurrentWall(true);
       if (!current) return;
-      savedWalls.push(current);
+      if (editingIndex === null) savedWalls.push(current);
+      else savedWalls[editingIndex] = current;
       saveWalls();
-      inputs.forEach(input => input.value = '');
-      renderWallList();
+      clearDraft();
       calculate({ skipEmptyStones: true });
     });
     function setMode(stones) {
@@ -280,8 +413,13 @@
       const factor = lastUnit === 'm' ? 100 : 0.01;
       inputs.forEach(input => {
         const number = parseDimension(input.value);
-        if (Number.isFinite(number)) input.value = String(Math.round(number * factor * 100000) / 100000).replace('.', ',');
+        if (Number.isFinite(number)) input.value = inputValue(number * factor);
       });
+      draftOpenings.forEach(opening => ['length', 'height'].forEach(dimension => {
+        const number = parseDimension(opening[dimension]);
+        if (Number.isFinite(number)) opening[dimension] = inputValue(number * factor);
+      }));
+      renderOpenings();
       document.querySelectorAll('#calculator > .fields .suffix').forEach(el => el.textContent = unit.value);
       lastUnit = unit.value;
       resetResult();
@@ -289,9 +427,10 @@
     [...inputs, ...stoneInputs].forEach(input => input.addEventListener('input', resetResult));
     function calculate({ skipEmptyStones = false } = {}) {
       resetResult();
-      const current = readCurrentWall(savedWalls.length === 0);
+      const current = readCurrentWall(savedWalls.length === 0 || editingIndex !== null);
       if (current === false || (current === null && savedWalls.length === 0)) return;
-      const allWalls = current ? [...savedWalls, current] : savedWalls;
+      const otherWalls = savedWalls.filter((_, index) => index !== editingIndex);
+      const allWalls = current ? [...otherWalls, current] : otherWalls;
       const result = allWalls.reduce((sum, wall) => sum + wall.volume, 0);
       if (!Number.isFinite(result)) {
         error.textContent = 'Die Maße sind zu groß. Bitte prüfe deine Eingaben.';
@@ -299,9 +438,12 @@
       }
       error.textContent = '';
       volume.textContent = `${format(result)} m³`;
+      const gross = allWalls.reduce((sum, wall) => sum + wall.gross, 0);
+      const cutouts = allWalls.reduce((sum, wall) => sum + wall.openVolume, 0);
       formula.textContent = allWalls.length === 1
-        ? `${allWalls[0].metres.map(value => format(value) + ' m').join(' × ')} = ${format(result)} m³`
-        : `${allWalls.map(wall => format(wall.volume) + ' m³').join(' + ')} = ${format(result)} m³${current ? ' (einschließlich aktueller Wand)' : ''}`;
+        ? `${allWalls[0].metres.map(value => format(value) + ' m').join(' × ')} = ${format(gross)} m³ brutto`
+        : `${allWalls.length} Wände: ${format(gross)} m³ brutto${current ? ' (einschließlich aktueller Wand)' : ''}`;
+      deduction.textContent = `Öffnungen: − ${format(cutouts)} m³ · Netto: ${format(result)} m³`;
       if (!stoneMode) return;
       if (skipEmptyStones && stoneInputs.every(input => !input.value.trim())) return;
       const stoneDimensions = stoneInputs.map(input => parseDimension(input.value));
