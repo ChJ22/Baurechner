@@ -148,6 +148,11 @@
                 <p class="muted">Die Werte sind Vorschläge. Beide Fugenmaße kannst du jederzeit selbst ändern. Eine unvermörtelte Stoßfuge kann trotzdem einen Abstand haben.</p>
               </div>
             </div>
+            <div class="stone-fields">
+              <h3>Verschnittzuschlag</h3>
+              <p class="muted">Ein Prozentsatz für das Mauervolumen und, bei der Steinberechnung, für die Steinzahl. Die Wandmaße bleiben unverändert.</p>
+              <label class="field" for="waste-percent"><span>Verschnitt</span><div class="input-wrap"><input id="waste-percent" inputmode="decimal" autocomplete="off" value="0" aria-describedby="error"><span class="suffix" aria-hidden="true">%</span></div></label>
+            </div>
             <p class="error" id="error" role="alert"></p>
             <button class="calculate" id="calculate-button" type="submit">Volumen berechnen</button>
           </form>
@@ -157,11 +162,12 @@
         </div>
         <div class="wall-list" id="wall-list" hidden><h3>Gespeicherte Wände</h3><p class="muted">Du kannst Wände bearbeiten, entfernen oder weitere hinzufügen.</p><ul id="wall-items"></ul></div>
       </div>
-      <div class="result" aria-live="polite"><span class="caption" id="volume-caption">Volumen der Mauer nach Abzügen</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p><p class="formula" id="deduction"></p>
+      <div class="result" aria-live="polite"><span class="caption" id="volume-caption">Volumen der Mauer nach Abzügen und Zuschlag</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p><p class="formula" id="deduction"></p><p class="formula" id="volume-waste"></p>
         <div class="stone-result" id="stone-result" hidden>
           <dl><dt>Volumen eines Steins</dt><dd id="stone-volume">–</dd><dt>Rastermaß mit Fugen (L × H)</dt><dd id="joint-module">–</dd><dt>Rechnerischer Fugenraum</dt><dd id="joint-volume">–</dd><dt>Rechnung</dt><dd id="stone-division">–</dd></dl>
-          <span class="caption">Benötigte Steine (aufgerundet)</span><output class="value" id="stone-count">– Stück</output>
-          <p class="formula">Schätzwert für regelmäßiges Mauerwerk mit Öffnungsabzug. Fugenraum ist nicht gleich Mörtelbedarf; ohne Verschnitt und gesonderte Berechnung von Steinverband oder Zuschnitten.</p>
+          <span class="caption">Benötigte Steine mit Verschnitt (aufgerundet)</span><output class="value" id="stone-count">– Stück</output>
+          <p class="formula" id="stone-waste"></p>
+          <p class="formula">Schätzwert für regelmäßiges Mauerwerk mit Öffnungsabzug. Fugenraum ist nicht gleich Mörtelbedarf; Steinverband und Zuschnitte werden nicht gesondert berechnet.</p>
         </div>
       </div>
     </section>
@@ -193,6 +199,7 @@
     const ids = ['length', 'width', 'height'];
     const inputs = ids.map(id => document.getElementById(id));
     const stoneInputs = ['stone-length', 'stone-width', 'stone-height'].map(id => document.getElementById(id));
+    const wasteInput = document.getElementById('waste-percent');
     const jointPreset = document.getElementById('joint-preset');
     const bedJoint = document.getElementById('bed-joint');
     const headJoint = document.getElementById('head-joint');
@@ -302,11 +309,13 @@
     }));
     function resetResult() {
       error.textContent = '';
-      [...inputs, ...stoneInputs, bedJoint, headJoint].forEach(input => input.removeAttribute('aria-invalid'));
+      [...inputs, ...stoneInputs, bedJoint, headJoint, wasteInput].forEach(input => input.removeAttribute('aria-invalid'));
       draftOpenings.forEach(opening => [opening.lengthField, opening.heightField].forEach(field => field?.removeAttribute('aria-invalid')));
       volume.textContent = '– m³';
       formula.textContent = 'Länge × Breite × Höhe';
       deduction.textContent = '';
+      document.getElementById('volume-waste').textContent = '';
+      document.getElementById('stone-waste').textContent = '';
       stoneResult.hidden = true;
     }
     function renderWallList() {
@@ -358,7 +367,7 @@
       document.getElementById('wall-form-title').textContent = editingIndex === null ? `Wand ${savedWalls.length + 1} eingeben` : `Wand ${editingIndex + 1} bearbeiten`;
       addWallButton.textContent = editingIndex === null ? 'Wand speichern und weitere hinzufügen' : 'Änderungen an Wand speichern';
       cancelEditButton.hidden = editingIndex === null;
-      document.getElementById('volume-caption').textContent = savedWalls.length > 1 ? 'Gesamtvolumen aller Wände nach Abzügen' : 'Wandvolumen nach Abzügen';
+      document.getElementById('volume-caption').textContent = savedWalls.length > 1 ? 'Gesamtvolumen aller Wände mit Verschnitt' : 'Wandvolumen mit Verschnitt';
     }
     function clearDraft() {
       editingIndex = null;
@@ -464,7 +473,7 @@
       lastUnit = unit.value;
       resetResult();
     });
-    [...inputs, ...stoneInputs].forEach(input => input.addEventListener('input', resetResult));
+    [...inputs, ...stoneInputs, wasteInput].forEach(input => input.addEventListener('input', resetResult));
     function calculate({ skipEmptyStones = false } = {}) {
       resetResult();
       const current = readCurrentWall(savedWalls.length === 0 || editingIndex !== null);
@@ -476,14 +485,28 @@
         error.textContent = 'Die Maße sind zu groß. Bitte prüfe deine Eingaben.';
         return;
       }
+      const wastePercent = parseDimension(wasteInput.value);
+      if (!Number.isFinite(wastePercent) || wastePercent < 0) {
+        error.textContent = 'Bitte gib für den Verschnitt eine Zahl ab 0 % ein.';
+        wasteInput.setAttribute('aria-invalid', 'true'); wasteInput.focus();
+        return;
+      }
+      const wasteVolume = result * wastePercent / 100;
+      const volumeWithWaste = result + wasteVolume;
+      if (!Number.isFinite(volumeWithWaste)) {
+        error.textContent = 'Der Verschnittzuschlag ist zu groß. Bitte prüfe deine Eingabe.';
+        wasteInput.setAttribute('aria-invalid', 'true'); wasteInput.focus();
+        return;
+      }
       error.textContent = '';
-      volume.textContent = `${format(result)} m³`;
+      volume.textContent = `${format(volumeWithWaste)} m³`;
       const gross = allWalls.reduce((sum, wall) => sum + wall.gross, 0);
       const cutouts = allWalls.reduce((sum, wall) => sum + wall.openVolume, 0);
       formula.textContent = allWalls.length === 1
         ? `${allWalls[0].metres.map(value => format(value) + ' m').join(' × ')} = ${format(gross)} m³ brutto`
         : `${allWalls.length} Wände: ${format(gross)} m³ brutto${current ? ' (einschließlich aktueller Wand)' : ''}`;
       deduction.textContent = `Öffnungen: − ${format(cutouts)} m³ · Netto: ${format(result)} m³`;
+      document.getElementById('volume-waste').textContent = `Verschnitt ${format(wastePercent)} %: + ${format(wasteVolume)} m³ · Gesamt: ${format(volumeWithWaste)} m³`;
       if (!stoneMode) return;
       if (skipEmptyStones && stoneInputs.every(input => !input.value.trim())) return;
       const stoneDimensions = stoneInputs.map(input => parseDimension(input.value));
@@ -510,7 +533,9 @@
       // Each wall contributes its net face area times its actual depth; the nominal module
       // includes joints in wall length and height, but never beyond the wall thickness.
       const exactCount = allWalls.reduce((sum, wall) => sum + wall.volume / moduleCubicMetres, 0);
-      if (!Number.isFinite(exactCount) || !Number.isSafeInteger(Math.ceil(exactCount))) {
+      const baseCount = Math.ceil(exactCount);
+      const finalCount = Math.ceil(baseCount * (1 + wastePercent / 100));
+      if (!Number.isFinite(exactCount) || !Number.isSafeInteger(baseCount) || !Number.isSafeInteger(finalCount)) {
         error.textContent = 'Diese Maße ergeben eine zu große Stückzahl. Bitte prüfe deine Eingaben.';
         return;
       }
@@ -518,7 +543,8 @@
       document.getElementById('joint-module').textContent = `${format(moduleLength)} × ${format(moduleHeight)} cm`;
       document.getElementById('joint-volume').textContent = `${format(Math.max(0, result - exactCount * stoneCubicMetres))} m³`;
       document.getElementById('stone-division').textContent = `${format(result)} m³ ÷ ${format(moduleCubicMetres)} m³ = ${formatCount(exactCount)} Steine`;
-      document.getElementById('stone-count').textContent = `${new Intl.NumberFormat('de-DE').format(Math.ceil(exactCount))} Stück`;
+      document.getElementById('stone-count').textContent = `${new Intl.NumberFormat('de-DE').format(finalCount)} Stück`;
+      document.getElementById('stone-waste').textContent = `Grundbedarf: ${format(baseCount)} Stück · Verschnitt ${format(wastePercent)} %: + ${format(finalCount - baseCount)} Stück`;
       stoneResult.hidden = false;
     }
     document.getElementById('calculator').addEventListener('submit', event => { event.preventDefault(); calculate(); });
