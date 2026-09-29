@@ -71,6 +71,7 @@
     .field span { display: block; margin-bottom: 7px; }
     .input-wrap { position: relative; }
     input { display: block; width: 100%; padding: 13px 48px 13px 14px; color: #192521; background: #fff; border: 1px solid #cbd4cc; border-radius: 10px; outline: none; font-size: 1.05rem; }
+    input[type="checkbox"] { display: inline-block; width: auto; margin: 12px 6px 8px 0; padding: 0; accent-color: #246249; }
     input:focus, select:focus-visible, button:focus-visible { outline: 3px solid #8cbea1; outline-offset: 2px; }
     .suffix { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #66776c; font-weight: 500; }
     .error { min-height: 1.5em; color: #a02c25; font-size: .9rem; margin: 9px 0 0; }
@@ -147,11 +148,16 @@
                 </div>
                 <p class="muted">Die Werte sind Vorschläge. Beide Fugenmaße kannst du jederzeit selbst ändern. Eine unvermörtelte Stoßfuge kann trotzdem einen Abstand haben.</p>
                 <div class="joint-fields" id="mortar-controls" hidden>
-                  <h3>Verbindungsmaterial schätzen</h3>
-                  <label class="field" for="mortar-rate"><span>Verbrauchswert für Trockenmaterial</span><div class="input-wrap"><input id="mortar-rate" inputmode="decimal" autocomplete="off" placeholder="kg je m³ Mauerwerk" aria-describedby="error"><span class="suffix" aria-hidden="true">kg/m³</span></div></label>
+                  <h3>Verbindungsmaterial aus Fugen berechnen</h3>
+                  <label><input id="head-filled" type="checkbox"> Stoßfugen mit Mörtel füllen</label>
+                  <p class="muted">Ein Abstand in der Stoßfuge wird nur bei gesetztem Häkchen als Mörtel berechnet.</p>
+                  <div class="fields">
+                    <label class="field" for="mortar-pack"><span>Trockenmaterial je Sack</span><div class="input-wrap"><input id="mortar-pack" inputmode="decimal" autocomplete="off" aria-describedby="error"><span class="suffix" aria-hidden="true">kg</span></div></label>
+                    <label class="field" for="mortar-yield"><span>Ergiebigkeit: angemischter Mörtel je Sack</span><div class="input-wrap"><input id="mortar-yield" inputmode="decimal" autocomplete="off" aria-describedby="error"><span class="suffix" aria-hidden="true">Liter</span></div></label>
+                  </div>
                   <p class="muted" id="mortar-reference"></p>
                   <a id="mortar-source" target="_blank" rel="noopener noreferrer" hidden>Referenz ansehen</a>
-                  <p class="muted">Du kannst den Verbrauchswert aus dem Datenblatt deines Produkts übernehmen. Geänderte Fugenmaße ändern den kg/m³-Wert nicht automatisch.</p>
+                  <p class="muted">Für Trockenmaterial zählt die Ergiebigkeit des Sacks nach dem Anmischen. Die Dichte des nassen Mörtels allein ergibt nur das Nassgewicht einschließlich Wasser. Trage für eine bessere Schätzung die Werte deines Produkts ein.</p>
                 </div>
               </div>
             </div>
@@ -171,14 +177,15 @@
       </div>
       <div class="result" aria-live="polite"><span class="caption" id="volume-caption">Volumen der Mauer nach Abzügen und Zuschlag</span><output class="value" id="volume">– m³</output><p class="formula" id="formula">Länge × Breite × Höhe</p><p class="formula" id="deduction"></p><p class="formula" id="volume-waste"></p>
         <div class="stone-result" id="stone-result" hidden>
-          <dl><dt>Volumen eines Steins</dt><dd id="stone-volume">–</dd><dt>Rastermaß mit Fugen (L × H)</dt><dd id="joint-module">–</dd><dt>Rechnerischer Fugenraum</dt><dd id="joint-volume">–</dd><dt>Rechnung</dt><dd id="stone-division">–</dd></dl>
+           <dl><dt>Volumen eines Steins</dt><dd id="stone-volume">–</dd><dt>Rastermaß mit Fugen (L × H)</dt><dd id="joint-module">–</dd><dt>Rechnerischer Zwischenraum inkl. offener Stoßfugen</dt><dd id="joint-volume">–</dd><dt>Rechnung</dt><dd id="stone-division">–</dd></dl>
           <span class="caption">Benötigte Steine mit Verschnitt (aufgerundet)</span><output class="value" id="stone-count">– Stück</output>
           <p class="formula" id="stone-waste"></p>
-          <p class="formula">Schätzwert für regelmäßiges Mauerwerk mit Öffnungsabzug. Fugenraum ist nicht gleich Mörtelbedarf; Steinverband und Zuschnitte werden nicht gesondert berechnet.</p>
-          <div class="stone-result" id="mortar-result" hidden>
-            <span class="caption">Verbindungsmaterial (Trockenmasse, geschätzt)</span><output class="value" id="mortar-kg">– kg</output>
-            <p class="formula" id="mortar-formula"></p>
-            <p class="formula" id="mortar-disclaimer"></p>
+           <p class="formula">Schätzwert für regelmäßiges Mauerwerk mit Öffnungsabzug. Steinverband und Zuschnitte werden nicht gesondert berechnet.</p>
+           <div class="stone-result" id="mortar-result" hidden>
+             <span class="caption">Verbindungsmaterial (Trockenmasse, geschätzt)</span><output class="value" id="mortar-kg">– kg</output>
+             <p class="formula" id="mortar-joints"></p>
+             <p class="formula" id="mortar-formula"></p>
+             <p class="formula" id="mortar-disclaimer"></p>
           </div>
         </div>
       </div>
@@ -217,28 +224,34 @@
     const headJoint = document.getElementById('head-joint');
     const jointHint = document.getElementById('joint-hint');
     const mortarControls = document.getElementById('mortar-controls');
-    const mortarRateInput = document.getElementById('mortar-rate');
+    const mortarPackInput = document.getElementById('mortar-pack');
+    const mortarYieldInput = document.getElementById('mortar-yield');
+    const headFilled = document.getElementById('head-filled');
     const mortarReference = document.getElementById('mortar-reference');
     const mortarSource = document.getElementById('mortar-source');
     const mortarResult = document.getElementById('mortar-result');
     const mortarPresets = {
-      clinker: { rate: 400, note: 'Baumit VM: ca. 46 kg/m² bei NF-Vollstein und 11,5 cm Wanddicke; für die Volumenrechnung umgerechnet auf 400 kg/m³.', url: 'https://baumit.de/files/de/pdf_files/m_rtelverbrauchstabelle.pdf' },
-      'poroton-block': { rate: 135, note: 'Grobe Ableitung: LZR nennt ca. 88 l Normalmörtel/m³ bei Hochlochziegeln; mit ca. 40 kg Trockenmörtel je 26 l Frischmörtel ≈ 135 kg/m³.', url: 'https://www.lzr.de/wp-content/uploads/LZR-Ermittlung-Moertelbedarf.pdf' },
-      'poroton-plan': { rate: 6, note: 'Grobe Modellannahme: 1 mm Lagerfuge bei ca. 25 cm Steinhöhe und angenommene 1,5 kg Trockenmörtel je Liter Fugenraum ≈ 6 kg/m³. Kein allgemeiner Hersteller-Verbrauchswert.', url: 'https://www.wienerberger.de/informationen/wand/verarbeitung-planziegel-mit-duennbettmoertel.html' },
-      aac: { rate: 12, note: 'Xella/Ytong: ungefähr 12 kg/m³ für 30 cm dicke Plansteine mit etwa 25 cm Höhe und unvermörtelten Stoßfugen.', url: 'https://storefrontapi.commerce.xella.com/medias/Gesamtpreisliste-2024-Ytong-Silka.pdf?context=bWFzdGVyfHJvb3R8ODk1NjQ1M3xhcHBsaWNhdGlvbi9wZGZ8YURabEwyZzFOaTg1TVRreE56YzVPVFU0T0RFMEwwZGxjMkZ0ZEhCeVpXbHpiR2x6ZEdVdE1qQXlOQzFaZEc5dVp5MVRhV3hyWVM1d1pHWXxiNTBmOGU2MzdhYTgxMjAyMTM3N2FhNzg2MTFmMzA3MzE0YjI0YTY4N2E5OTIwOWQ5YmI3NGQzMTg3MTEyZWVi' },
-      silicate: { rate: 10, note: 'KS Süd: etwa 2,5 kg/m² bei 24 cm Planstein-Wand und 24,8 cm Steinhöhe; gerundet rund 10 kg/m³.', url: 'https://www.ks-sued.de/mandanten/sued/08_downloadcenter/KS_SUED_Produktprogramm_2021-03-29.pdf' }
+      clinker: { pack: 35, yield: 20, filled: true, note: 'Beispielprodukt Baumit VM: 35 kg Trockenmörtel ergeben ca. 20 l Frischmörtel. Die 400 kg/m³ aus dem alten Klinker-Richtwert werden hier nicht mehr verwendet.', url: 'https://baumit.de/files/de/pdf_files/pds_klinker_normal__vm_normal__wn_16_bde_de_42182.pdf' },
+      'poroton-block': { pack: 25, yield: 17, filled: true, note: 'Beispielprodukt quick-mix K 01: 25 kg ergeben ca. 17 l Frischmörtel. Für Lochziegel kann zusätzlich Mörtel in Kammern gelangen; Produkt und Stein prüfen.', url: 'https://profi.quick-mix.de/DE_de/fuer-heimwerker/produkte/kalk-zement-mauer-und-putzmortel-k-01' },
+      'poroton-plan': { pack: 25, yield: 20, filled: false, note: 'Nur Umrechnungsbeispiel aus Xella Ytong FIX N 241 (25 kg ≈ 20 l), kein Poroton-Produktwert. Für Poroton den Ertrag des tatsächlich verwendeten Dünnbettmörtels eintragen; Mörtel kann nur auf Ziegelstegen aufliegen.', url: 'https://technik.xella.de/media/ressources/ytong/technische-produktdatenblaetter/Ytong-Duennbettmoertel-N241.pdf' },
+      aac: { pack: 25, yield: 20, filled: false, note: 'Beispielprodukt Xella Ytong FIX N 241: 25 kg Trockenmörtel ergeben ca. 20 l angemischten Mörtel. Der wirkliche Verbrauch hängt auch vom Auftrag ab.', url: 'https://technik.xella.de/media/ressources/ytong/technische-produktdatenblaetter/Ytong-Duennbettmoertel-N241.pdf' },
+      silicate: { pack: 20, yield: 16, filled: false, note: 'Beispielprodukt H+H KS-Dünnbettmörtel: 20 kg ergeben ca. 16 l Frischmörtel. Bei Nut und Feder werden Stoßfugen oft nicht vermörtelt.', url: 'https://www.hplush.de/de/kalksandstein/produkte/ergaenzungsprodukte?cid=14911&file=files%2Fdownloads%2Fhplush%2Fkalksandstein%2Fproduktdatenblatt%2FH%2BH+-+KS-Du%CC%88nnbettmo%CC%88rtel+%28Weber+SBG%29.pdf' }
     };
     function updateMortarPreset() {
       const selected = mortarPresets[jointPreset.value];
       mortarControls.hidden = jointPreset.value === 'none';
       if (selected) {
-        mortarRateInput.value = String(selected.rate);
+        mortarPackInput.value = String(selected.pack);
+        mortarYieldInput.value = String(selected.yield);
+        headFilled.checked = selected.filled;
         mortarReference.textContent = selected.note;
         mortarSource.href = selected.url;
         mortarSource.hidden = false;
       } else {
-        mortarRateInput.value = '';
-        mortarReference.textContent = jointPreset.value === 'custom' ? 'Eigene Bauweise: bitte Verbrauchswert aus dem Produktdatenblatt eintragen.' : '';
+        mortarPackInput.value = '';
+        mortarYieldInput.value = '';
+        headFilled.checked = false;
+        mortarReference.textContent = jointPreset.value === 'custom' ? 'Eigene Bauweise: bitte Sackgewicht und Ergiebigkeit aus dem Produktdatenblatt eintragen.' : '';
         mortarSource.removeAttribute('href');
         mortarSource.hidden = true;
       }
@@ -263,11 +276,11 @@
     });
     [bedJoint, headJoint].forEach(field => field.addEventListener('input', () => {
       const choice = jointPresets[jointPreset.value];
-      if (choice && (parseDimension(bedJoint.value) !== choice.bed || parseDimension(headJoint.value) !== choice.head)) jointHint.textContent = `${choice.hint} Fugenmaße angepasst; bitte auch den Verbrauchswert prüfen.`;
+      if (choice && (parseDimension(bedJoint.value) !== choice.bed || parseDimension(headJoint.value) !== choice.head)) jointHint.textContent = `${choice.hint} Fugenmaße angepasst; der Mörtelbedarf wird aus den neuen Maßen berechnet.`;
       resetResult();
     }));
-    mortarRateInput.addEventListener('input', resetResult);
-    updateMortarPreset();
+    [mortarPackInput, mortarYieldInput].forEach(field => field.addEventListener('input', resetResult));
+    headFilled.addEventListener('change', resetResult);
     const stoneFields = document.getElementById('stone-fields');
     const stoneResult = document.getElementById('stone-result');
     const modeVolume = document.getElementById('mode-volume');
@@ -299,7 +312,9 @@
     };
     const format = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 5 }).format(value);
     const formatCount = value => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(value);
+    const formatKg = value => new Intl.NumberFormat('de-DE', { useGrouping: false, maximumFractionDigits: 2 }).format(value);
     const inputValue = value => String(Math.round(value * 100000) / 100000).replace('.', ',');
+    updateMortarPreset();
     function renderOpenings() {
       openingItems.replaceChildren();
       draftOpenings.forEach((opening, index) => {
@@ -348,7 +363,7 @@
     }));
     function resetResult() {
       error.textContent = '';
-      [...inputs, ...stoneInputs, bedJoint, headJoint, wasteInput, mortarRateInput].forEach(input => input.removeAttribute('aria-invalid'));
+      [...inputs, ...stoneInputs, bedJoint, headJoint, wasteInput, mortarPackInput, mortarYieldInput].forEach(input => input.removeAttribute('aria-invalid'));
       draftOpenings.forEach(opening => [opening.lengthField, opening.heightField].forEach(field => field?.removeAttribute('aria-invalid')));
       volume.textContent = '– m³';
       formula.textContent = 'Länge × Breite × Höhe';
@@ -587,24 +602,34 @@
       document.getElementById('stone-waste').textContent = `Grundbedarf: ${format(baseCount)} Stück · Verschnitt ${format(wastePercent)} %: + ${format(finalCount - baseCount)} Stück`;
       stoneResult.hidden = false;
       if (jointPreset.value === 'none') return;
-      if (jointPreset.value === 'custom' && !mortarRateInput.value.trim()) {
-        mortarReference.textContent = 'Für eine Materialschätzung bitte einen Verbrauchswert aus dem Produktdatenblatt eintragen.';
+      if (jointPreset.value === 'custom' && (!mortarPackInput.value.trim() || !mortarYieldInput.value.trim())) {
+        mortarReference.textContent = 'Für eine Materialschätzung bitte Sackgewicht und Ergiebigkeit aus dem Produktdatenblatt eintragen.';
         return;
       }
-      const rate = parseDimension(mortarRateInput.value);
-      if (!Number.isFinite(rate) || rate <= 0) {
-        error.textContent = 'Bitte gib für das Verbindungsmaterial einen Verbrauchswert größer als 0 kg/m³ ein.';
-        mortarRateInput.setAttribute('aria-invalid', 'true'); mortarRateInput.focus();
+      const packKg = parseDimension(mortarPackInput.value);
+      const yieldL = parseDimension(mortarYieldInput.value);
+      if (!Number.isFinite(packKg) || packKg <= 0 || !Number.isFinite(yieldL) || yieldL <= 0) {
+        error.textContent = 'Bitte gib für Sackgewicht und Ergiebigkeit jeweils eine Zahl größer als 0 ein.';
+        const field = !Number.isFinite(packKg) || packKg <= 0 ? mortarPackInput : mortarYieldInput;
+        field.setAttribute('aria-invalid', 'true'); field.focus();
         return;
       }
-      const materialKg = volumeWithWaste * rate;
-      if (!Number.isFinite(materialKg)) {
+      // Divide the net wall into repeating L × H modules. Bed mortar spans the
+      // module's whole length; head mortar fills the height of the stone only.
+      // The head gap is left out when the head joints are not mortared.
+      const bedLitres = result * (bed / 10) / moduleHeight * 1000;
+      const headLitres = headFilled.checked ? result * (stoneDimensions[2] / moduleHeight) * (head / 10) / moduleLength * 1000 : 0;
+      const mortarLitres = bedLitres + headLitres;
+      const litresWithWaste = mortarLitres * (1 + wastePercent / 100);
+      const materialKg = litresWithWaste * packKg / yieldL;
+      if (![bedLitres, headLitres, mortarLitres, litresWithWaste, materialKg].every(Number.isFinite)) {
         error.textContent = 'Der berechnete Materialbedarf ist zu groß. Bitte prüfe die Maße und den Verbrauchswert.';
         return;
       }
-      document.getElementById('mortar-kg').textContent = `${formatCount(materialKg)} kg`;
-      document.getElementById('mortar-formula').textContent = `${format(result)} m³ netto + ${format(wasteVolume)} m³ Zuschlag = ${format(volumeWithWaste)} m³ × ${format(rate)} kg/m³ = ${formatCount(materialKg)} kg`;
-      document.getElementById('mortar-disclaimer').textContent = `Nur eine Abschätzung auf Basis des angezeigten Referenzwerts (${format(rate)} kg/m³). ${mortarReference.textContent} Der wirkliche Bedarf hängt von Produkt, Steinformat, Fugen, Auftrag und Baustellenverlusten ab; keine exakte Bestellmenge.`;
+      document.getElementById('mortar-kg').textContent = `${formatKg(materialKg)} kg`;
+      document.getElementById('mortar-joints').textContent = `Rechnerisch gefüllte Fugen: Lagerfugen ${format(bedLitres)} l + Stoßfugen ${format(headLitres)} l = ${format(mortarLitres)} l Frischmörtel (ohne Verschnitt).`;
+      document.getElementById('mortar-formula').textContent = `${format(mortarLitres)} l + ${format(wastePercent)} % Zuschlag = ${format(litresWithWaste)} l × ${format(packKg)} kg / ${format(yieldL)} l je Sack = ${formatKg(materialKg)} kg Trockenmaterial.`;
+      document.getElementById('mortar-disclaimer').textContent = `Geometrische Abschätzung aus deinen Stein- und Fugenmaßen. ${mortarReference.textContent} Regelmäßiger Verband und vollflächig gefüllte Lagerfugen angenommen. Auftrag, Hohlräume im Stein, Verschnitt, erste Ausgleichsschicht und tatsächliche Verarbeitung können stark abweichen. Für die Bestellung bitte Produktverbrauch und Herstellerhinweise gegenprüfen.`;
       mortarResult.hidden = false;
     }
     document.getElementById('calculator').addEventListener('submit', event => { event.preventDefault(); calculate(); });
