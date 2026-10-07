@@ -79,6 +79,18 @@
     .calculate:hover { background: #1a4e39; }
     .diagram { background: #fff; border: 1px solid #d7dfdc; border-radius: 17px; padding: 14px 8px; overflow-x: auto; }
     .diagram img { display: block; width: 100%; height: auto; border-radius: 12px; }
+
+    .cross-section-result { border-top: 1px solid #cedfce; margin-top: 22px; padding-top: 20px; }
+    .cross-section-result h3 { margin-bottom: 6px; }
+    .cross-section-result .cross-note { color:#4f6758; font-size:.88rem; line-height:1.45; margin:0 0 14px; }
+    .cross-grid { display:grid; gap:12px; }
+    .cross-card { background:#fff; border:1px solid #cfded3; border-radius:13px; padding:14px; }
+    .cross-card-head { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline; margin-bottom:10px; }
+    .cross-card-head strong { font-size:.96rem; }
+    .cross-card-head span { color:#607067; font-size:.84rem; }
+    .cross-svg { width:100%; height:auto; display:block; overflow:visible; }
+    .cross-summary { margin:10px 0 0; color:#40584b; font-size:.86rem; line-height:1.45; }
+    .cross-warning { margin:10px 0 0; padding:9px 10px; border-radius:9px; background:#fff7df; color:#6b5620; font-size:.82rem; line-height:1.4; }
     .result { margin-top: 25px; padding: 22px 24px; background: #eaf3eb; border-top: 1px solid #d7e6da; }
     .result .caption { display: block; font-weight: 750; color: #3a6d51; font-size: .89rem; }
     .value { display: block; font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -.055em; line-height: 1.15; margin: 7px 0; }
@@ -182,6 +194,11 @@
           <span class="caption">Benötigte Steine mit Verschnitt (aufgerundet)</span><output class="value" id="stone-count">– Stück</output>
           <p class="formula" id="stone-waste"></p>
            <p class="formula">Schätzwert für regelmäßiges Mauerwerk mit Öffnungsabzug. Steinverband und Zuschnitte werden nicht gesondert berechnet.</p>
+           <section class="cross-section-result" id="cross-section-result" hidden>
+             <h3>Steinaufteilung im Wandquerschnitt</h3>
+             <p class="cross-note">Schematische, maßbasierte Darstellung der Wanddicke. Ganze Steine, Fugen und ein nötiger Zuschnitt werden automatisch aus deinen Eingaben erzeugt. Die Darstellung ist kein Ausführungs- oder Verbandplan.</p>
+             <div class="cross-grid" id="cross-grid"></div>
+           </section>
            <div class="stone-result" id="mortar-result" hidden>
              <span class="caption">Verbindungsmaterial – Einkaufsmenge</span><output class="value" id="mortar-kg">– kg</output>
              <p class="formula" id="mortar-joints"></p>
@@ -374,6 +391,8 @@
       document.getElementById('stone-waste').textContent = '';
       stoneResult.hidden = true;
       mortarResult.hidden = true;
+      const crossSectionResult = document.getElementById('cross-section-result');
+      if (crossSectionResult) crossSectionResult.hidden = true;
     }
     function renderWallList() {
       wallItems.replaceChildren();
@@ -531,6 +550,66 @@
       resetResult();
     });
     [...inputs, ...stoneInputs, wasteInput].forEach(input => input.addEventListener('input', resetResult));
+    function renderCrossSections(walls, stoneWidthCm, transverseJointMm) {
+      const section = document.getElementById('cross-section-result');
+      const grid = document.getElementById('cross-grid');
+      grid.innerHTML = '';
+      if (!walls.length || !Number.isFinite(stoneWidthCm) || stoneWidthCm <= 0) { section.hidden = true; return; }
+      const jointCm = Math.max(0, transverseJointMm / 10);
+      const unique = [];
+      walls.forEach((wall, index) => {
+        const depthCm = wall.metres[1] * 100;
+        if (!unique.some(item => Math.abs(item.depthCm - depthCm) < 0.001)) unique.push({ depthCm, wallNo: index + 1 });
+      });
+      unique.slice(0, 12).forEach(item => {
+        const target = item.depthCm;
+        const pieces = [];
+        let used = 0;
+        let guard = 0;
+        while (guard++ < 50) {
+          const needsJoint = pieces.length > 0;
+          const available = target - used - (needsJoint ? jointCm : 0);
+          if (available <= 0.0001) break;
+          if (needsJoint) used += jointCm;
+          const piece = Math.min(stoneWidthCm, target - used);
+          if (piece <= 0.0001) break;
+          pieces.push({ width: piece, full: Math.abs(piece - stoneWidthCm) < 0.001 });
+          used += piece;
+          if (target - used <= jointCm + 0.0001) break;
+        }
+        const card = document.createElement('div'); card.className = 'cross-card';
+        const head = document.createElement('div'); head.className='cross-card-head';
+        head.innerHTML = `<strong>${unique.length > 1 ? 'Wanddicke ' + format(target) + ' cm' : 'Wandquerschnitt'}</strong><span>${format(target)} cm Wand · ${format(stoneWidthCm)} cm Steinbreite · ${format(jointCm)} cm Fuge</span>`;
+        card.appendChild(head);
+        const NS='http://www.w3.org/2000/svg', svg=document.createElementNS(NS,'svg');
+        svg.setAttribute('viewBox','0 0 760 190'); svg.setAttribute('class','cross-svg'); svg.setAttribute('role','img');
+        svg.setAttribute('aria-label',`Schematische Steinaufteilung für ${format(target)} Zentimeter Wanddicke`);
+        const left=45, right=715, top=48, h=72, usable=right-left, scale=usable/target;
+        const add=(name,attrs,text)=>{const e=document.createElementNS(NS,name); Object.entries(attrs||{}).forEach(([k,v])=>e.setAttribute(k,v)); if(text!=null)e.textContent=text; svg.appendChild(e); return e;};
+        add('line',{x1:left,y1:27,x2:right,y2:27,stroke:'#263e31','stroke-width':'2'});
+        add('line',{x1:left,y1:20,x2:left,y2:34,stroke:'#263e31','stroke-width':'2'}); add('line',{x1:right,y1:20,x2:right,y2:34,stroke:'#263e31','stroke-width':'2'});
+        add('text',{x:(left+right)/2,y:18,'text-anchor':'middle',fill:'#263e31','font-size':'18','font-weight':'700'},`${format(target)} cm`);
+        let x=left;
+        pieces.forEach((piece,i)=>{
+          if(i>0 && jointCm>0){ const jw=jointCm*scale; add('rect',{x,y:top,width:jw,height:h,fill:'#d8d9d5',stroke:'#8b928d'}); x+=jw; }
+          const w=piece.width*scale; add('rect',{x,y:top,width:w,height:h,rx:'2',fill:piece.full?'#c77b4a':'#e6c56e',stroke:'#33483c','stroke-width':'1.5'});
+          const label = piece.full ? `${format(piece.width)} cm` : `Zuschnitt ${format(piece.width)} cm`;
+          if(w>58) add('text',{x:x+w/2,y:top+43,'text-anchor':'middle',fill:'#192521','font-size':w>105?'16':'13','font-weight':'700'},label);
+          add('line',{x1:x,y1:132,x2:x+w,y2:132,stroke:'#52655a','stroke-width':'1'}); add('line',{x1:x,y1:127,x2:x,y2:137,stroke:'#52655a'}); add('line',{x1:x+w,y1:127,x2:x+w,y2:137,stroke:'#52655a'});
+          if(w>42) add('text',{x:x+w/2,y:153,'text-anchor':'middle',fill:'#52655a','font-size':'12'},`${format(piece.width)} cm`);
+          x+=w;
+        });
+        card.appendChild(svg);
+        const summary=document.createElement('p'); summary.className='cross-summary';
+        const full=pieces.filter(p=>p.full).length, cut=pieces.find(p=>!p.full);
+        summary.textContent = `${full} ganze${full===1?'r Stein':' Steine'}${cut ? ` + 1 Zuschnitt (${format(cut.width)} cm)` : ''}${pieces.length>1 && jointCm>0 ? ` + ${pieces.length-1} Querfuge${pieces.length-1===1?'':'n'} à ${format(jointCm)} cm` : ''} = ${format(target)} cm Wanddicke.`;
+        card.appendChild(summary);
+        if (pieces.length > 1) { const warn=document.createElement('p'); warn.className='cross-warning'; warn.textContent='Mehrere Steine liegen über die Wanddicke nebeneinander. Diese Querschnittsgrafik dient zur Maßkontrolle; Verband, Verzahnung und konstruktive Ausführung müssen separat geplant werden.'; card.appendChild(warn); }
+        grid.appendChild(card);
+      });
+      section.hidden = false;
+    }
+
     function calculate({ skipEmptyStones = false } = {}) {
       resetResult();
       const current = readCurrentWall(savedWalls.length === 0 || editingIndex !== null);
@@ -602,6 +681,7 @@
       document.getElementById('stone-division').textContent = `${format(result)} m³ ÷ ${format(moduleCubicMetres)} m³ = ${formatCount(exactCount)} Steine`;
       document.getElementById('stone-count').textContent = `${new Intl.NumberFormat('de-DE').format(finalCount)} Stück`;
       document.getElementById('stone-waste').textContent = `Grundbedarf: ${format(baseCount)} Stück · Verschnitt ${format(wastePercent)} %: + ${format(finalCount - baseCount)} Stück`;
+      renderCrossSections(allWalls, stoneDimensions[1], head);
       stoneResult.hidden = false;
       if (jointPreset.value === 'none') return;
       if (jointPreset.value === 'custom' && (!mortarPackInput.value.trim() || !mortarYieldInput.value.trim())) {
