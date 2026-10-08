@@ -836,6 +836,18 @@
         if(!name||!type){el('e-error').textContent='Bitte Bereich und Leitungstyp angeben.';return;}
         areas.push({id:Date.now()+'-'+Math.random(),name,type,parts:[]});el('e-area-preset').value='';el('e-area').value='';el('e-area-custom-wrap').hidden=true;el('e-error').textContent='';save();render();
       });
+      const partPresets = ['Steckdose','Doppelsteckdose','Beleuchtung / Deckenleuchte','Wandleuchte','Lichtschalter','Wechselschalter','Herdanschluss','Backofen','Geschirrspüler','Waschmaschine','Trockner','Kühlschrank','Dunstabzugshaube','Rollladenmotor','Außensteckdose','Außenbeleuchtung','Heizungsanlage / Gastherme','Wärmepumpe','Unterverteilung','Wallbox','Abzweigdose','Verteilung → Abzweigdose','Abzweigdose → Steckdose'];
+      const partSelector = (initial='Steckdose') => {
+        const wrap=node('div','e-part-choice');
+        const select=node('select');select.setAttribute('aria-label','Anschluss oder Verbraucher');
+        for(const option of partPresets){const item=node('option','',option);item.value=option;select.append(item);}
+        const other=node('option','','Sonstiges / eigene Bezeichnung');other.value='custom';select.append(other);
+        const custom=node('input');custom.placeholder='Eigene Bezeichnung eingeben';custom.maxLength=100;
+        const isPreset=partPresets.includes(initial);select.value=isPreset?initial:'custom';custom.value=isPreset?'':initial;
+        const sync=()=>{custom.hidden=select.value!=='custom';custom.required=select.value==='custom';};
+        select.addEventListener('change',sync);sync();wrap.append(select,custom);
+        return {wrap,value:()=>select.value==='custom'?custom.value.trim():select.value};
+      };
       function render(){
         const host=el('e-areas');host.replaceChildren();
         if(!areas.length)host.append(node('p','e-empty','Noch keine Bereiche vorhanden. Lege oben deinen ersten Bereich an.'));
@@ -845,11 +857,11 @@
           const rows=node('div');const parts=Array.isArray(area.parts)?area.parts:[];
           parts.forEach((part,index)=>{
             const row=node('div','e-row');
-            const nameLabel=node('label','',`Teilstrecke ${index+1}`);const nameInput=node('input');nameInput.value=part.name||'';nameInput.placeholder='Bezeichnung';nameInput.maxLength=100;nameInput.addEventListener('change',()=>{part.name=nameInput.value.trim();save();});nameLabel.append(nameInput);
+            const nameLabel=node('label','',`Teilstrecke ${index+1}`);const nameChoice=partSelector(part.name||'');nameChoice.wrap.addEventListener('change',()=>{const name=nameChoice.value();if(name){part.name=name;save();}});nameLabel.append(nameChoice.wrap);
             const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.value=part.length;lenInput.inputMode='decimal';lenInput.setAttribute('aria-label','Länge in Metern');lenInput.addEventListener('change',()=>{const n=parse(lenInput.value);if(!Number.isFinite(n)||n<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');lenInput.value=part.length;return;}part.length=n;save();render();});lenLabel.append(lenInput);
             row.append(nameLabel,lenLabel,btn('✕',()=>{area.parts.splice(index,1);save();render();}));rows.append(row);
           });card.append(rows);
-          const add=node('form','e-add');const inputs=node('div','e-row');const nameLabel=node('label','','Neue Teilstrecke');const nameInput=node('input');nameInput.placeholder='z. B. waagerecht';nameInput.maxLength=100;nameLabel.append(nameInput);const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.inputMode='decimal';lenInput.placeholder='z. B. 4,5';lenInput.required=true;lenLabel.append(lenInput);inputs.append(nameLabel,lenLabel);add.append(inputs);const addButton=node('button','calculate','+ Teilstrecke hinzufügen');addButton.type='submit';add.append(addButton);add.addEventListener('submit',event=>{event.preventDefault();const length=parse(lenInput.value);if(!Number.isFinite(length)||length<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');return;}area.parts.push({name:nameInput.value.trim()||`Teilstrecke ${parts.length+1}`,length});save();render();});card.append(add);
+          const add=node('form','e-add');const inputs=node('div','e-row');const nameLabel=node('label','','Neue Teilstrecke');const nameChoice=partSelector();nameLabel.append(nameChoice.wrap);const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.inputMode='decimal';lenInput.placeholder='z. B. 4,5';lenInput.required=true;lenLabel.append(lenInput);inputs.append(nameLabel,lenLabel);add.append(inputs);const addButton=node('button','calculate','+ Teilstrecke hinzufügen');addButton.type='submit';add.append(addButton);add.addEventListener('submit',event=>{event.preventDefault();const length=parse(lenInput.value);if(!Number.isFinite(length)||length<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');return;}const name=nameChoice.value();if(!name){alert('Bitte eine Bezeichnung für die Teilstrecke eingeben.');return;}area.parts.push({name,length});save();render();});card.append(add);
           const total=parts.reduce((sum,p)=>sum+(Number(p.length)||0),0);const summary=node('div','e-total');summary.append(node('span','',`Bereichssumme · ${parts.length} Teilstrecken`),node('strong','',`${fmt(total)} m`));card.append(summary);host.append(card);
           sums.set(area.type,(sums.get(area.type)||0)+total);grand+=total;
         }
