@@ -162,6 +162,7 @@
       .stone-result dl { grid-template-columns:minmax(0,1fr) auto; font-size:.84rem; }
     }
     @media (max-width:370px) { .joint-fields .fields { grid-template-columns:1fr; } .design-chip { display:none; } }
+    .electro {max-width:980px;margin:auto}.electro h2{margin:0 0 8px}.e-card{background:#fff;border:1px solid #dce6dd;border-radius:17px;padding:20px;margin:18px 0;box-shadow:0 3px 16px #183e2610}.e-card h3{margin:0 0 15px}.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.electro label{display:block;font-size:.9rem;font-weight:700;margin:10px 0}.electro label input,.electro label select{display:block;width:100%;margin-top:7px;border:1px solid #cbd4cc;border-radius:10px;background:#fff;color:#192521;font-size:1rem;padding:12px;min-width:0}.electro button{cursor:pointer}.e-row{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:9px;align-items:end;margin:10px 0}.e-row label{margin:0}.e-row button,.e-action{border:1px solid #b9d1c0;background:#eff7f0;color:#245b42;border-radius:9px;padding:12px;font-weight:700}.e-row button{color:#a02c25}.e-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.e-head button{color:#a02c25;background:none;border:0;padding:8px}.e-total{background:#edf7ee;border-radius:12px;padding:15px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.e-total strong{color:#246249;font-size:1.4rem}.e-summary-row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e3ebe4}.e-summary-row strong{white-space:nowrap}.e-empty{color:#66776c;padding:14px 0}.e-note{font-size:.85rem;color:#66776c}.e-add{margin-top:12px}.e-add .calculate{margin:0}.electro [hidden]{display:none!important}@media(max-width:650px){.e-grid{grid-template-columns:1fr}.e-card{padding:15px}.e-row{grid-template-columns:minmax(0,1fr) 85px auto;gap:6px}.e-row button{padding:12px 9px}}
   </style>
 </head>
 <body>
@@ -172,7 +173,7 @@
     <p class="intro">Maße eingeben, Materialbedarf berechnen und die Steinaufteilung nachvollziehen.</p>
     <div class="tabs" role="tablist" aria-label="Rechnerbereich">
       <button class="tab" id="tab-wall" type="button" role="tab" aria-controls="wall" aria-selected="true"><strong>Mauerwerk</strong><small>Wandvolumen berechnen</small></button>
-      <button class="tab" id="tab-cable" type="button" role="tab" aria-controls="cable" aria-selected="false"><strong>Leitungsstrecken</strong><small>Längen je Leitungstyp sammeln · bald verfügbar</small></button>
+      <button class="tab" id="tab-cable" type="button" role="tab" aria-controls="cable" aria-selected="false"><strong>Leitungsstrecken</strong><small>Teilstrecken und Materialübersicht</small></button>
     </div>
 
     <section class="panel" id="wall" role="tabpanel" aria-labelledby="tab-wall">
@@ -272,7 +273,21 @@
       </div>
     </section>
 
-    <section class="panel empty" id="cable" role="tabpanel" aria-labelledby="tab-cable" hidden><div class="empty-icon" aria-hidden="true">〰</div><h2>Leitungsstrecken</h2><p class="muted">Hier kannst du später einzelne Leitungsstrecken erfassen und die Längen nach Leitungstyp zusammenrechnen.</p></section>
+    <section class="panel" id="cable" role="tabpanel" aria-labelledby="tab-cable" hidden>
+      <div class="panel-inner electro">
+        <h2>Elektroleitungen</h2><p class="muted">Bereiche anlegen, Teilstrecken messen und Längen je Leitungstyp automatisch addieren.</p>
+        <form id="e-form" class="e-card">
+          <h3>Neuen Bereich anlegen</h3>
+          <div class="e-grid"><label>Bereich / Verbraucher<input id="e-area" placeholder="z. B. Küche – Steckdosen" required maxlength="100"></label>
+          <label>Leitungstyp<select id="e-type"><option>NYM-J 3×1,5 mm²</option><option>NYM-J 5×1,5 mm²</option><option>NYM-J 3×2,5 mm²</option><option>NYM-J 5×2,5 mm²</option><option>NYM-J 5×4 mm²</option><option>NYM-J 5×6 mm²</option><option>NYM-J 5×10 mm²</option><option value="custom">Eigener Leitungstyp …</option></select></label></div>
+          <label id="e-custom-wrap" hidden>Eigener Leitungstyp<input id="e-custom" maxlength="80" placeholder="z. B. NYM-J 7×1,5 mm²"></label>
+          <button class="calculate" type="submit">+ Bereich anlegen</button><p class="error" id="e-error" role="alert"></p>
+        </form>
+        <div id="e-areas"></div>
+        <div class="e-card"><h3>Materialübersicht nach Leitungstyp</h3><div id="e-summary" aria-live="polite"></div></div>
+        <p class="muted" style="font-size:.85rem">Nur Mengenermittlung. Keine Prüfung von Strombelastbarkeit, Absicherung oder zulässiger Verlegeart. Elektroinstallationen fachgerecht planen und ausführen lassen.</p>
+      </div>
+    </section>
   </main>
   <script>
     const wallTab = document.getElementById('tab-wall');
@@ -802,6 +817,47 @@
       mortarResult.hidden = false;
     }
     document.getElementById('calculator').addEventListener('submit', event => { event.preventDefault(); calculate(); });
+
+    // Separate Elektroleitungs-Modul: vorhandene Mauerwerksberechnung bleibt unberührt.
+    (() => {
+      const storageKey = 'baurechner-elektro-v1';
+      let areas = [];
+      try { const stored = JSON.parse(localStorage.getItem(storageKey) || '[]'); if (Array.isArray(stored)) areas = stored; } catch (_) {}
+      const el = id => document.getElementById(id);
+      const fmt = n => new Intl.NumberFormat('de-DE', {maximumFractionDigits:2}).format(n);
+      const parse = s => Number(String(s).trim().replace(',', '.'));
+      const save = () => { try { localStorage.setItem(storageKey, JSON.stringify(areas)); } catch (_) {} };
+      const node = (tag, cls, value) => { const n=document.createElement(tag); if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n; };
+      const btn = (label, click, cls='e-action') => {const b=node('button',cls,label);b.type='button';b.addEventListener('click',click);return b;};
+      el('e-type').addEventListener('change',()=>{el('e-custom-wrap').hidden=el('e-type').value!=='custom';});
+      el('e-form').addEventListener('submit',e=>{
+        e.preventDefault();const name=el('e-area').value.trim();const type=el('e-type').value==='custom'?el('e-custom').value.trim():el('e-type').value;
+        if(!name||!type){el('e-error').textContent='Bitte Bereich und Leitungstyp angeben.';return;}
+        areas.push({id:Date.now()+'-'+Math.random(),name,type,parts:[]});el('e-area').value='';el('e-error').textContent='';save();render();
+      });
+      function render(){
+        const host=el('e-areas');host.replaceChildren();
+        if(!areas.length)host.append(node('p','e-empty','Noch keine Bereiche vorhanden. Lege oben deinen ersten Bereich an.'));
+        const sums=new Map();let grand=0;
+        for(const area of areas){
+          const card=node('div','e-card');const head=node('div','e-head');const title=node('h3','',area.name);head.append(title,btn('Bereich löschen',()=>{if(confirm('Diesen Bereich einschließlich aller Teilstrecken löschen?')){areas=areas.filter(a=>a.id!==area.id);save();render();}},''));card.append(head,node('p','e-note',area.type));
+          const rows=node('div');const parts=Array.isArray(area.parts)?area.parts:[];
+          parts.forEach((part,index)=>{
+            const row=node('div','e-row');
+            const nameLabel=node('label','',`Teilstrecke ${index+1}`);const nameInput=node('input');nameInput.value=part.name||'';nameInput.placeholder='Bezeichnung';nameInput.maxLength=100;nameInput.addEventListener('change',()=>{part.name=nameInput.value.trim();save();});nameLabel.append(nameInput);
+            const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.value=part.length;lenInput.inputMode='decimal';lenInput.setAttribute('aria-label','Länge in Metern');lenInput.addEventListener('change',()=>{const n=parse(lenInput.value);if(!Number.isFinite(n)||n<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');lenInput.value=part.length;return;}part.length=n;save();render();});lenLabel.append(lenInput);
+            row.append(nameLabel,lenLabel,btn('✕',()=>{area.parts.splice(index,1);save();render();}));rows.append(row);
+          });card.append(rows);
+          const add=node('form','e-add');const inputs=node('div','e-row');const nameLabel=node('label','','Neue Teilstrecke');const nameInput=node('input');nameInput.placeholder='z. B. waagerecht';nameInput.maxLength=100;nameLabel.append(nameInput);const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.inputMode='decimal';lenInput.placeholder='z. B. 4,5';lenInput.required=true;lenLabel.append(lenInput);inputs.append(nameLabel,lenLabel);add.append(inputs);const addButton=node('button','calculate','+ Teilstrecke hinzufügen');addButton.type='submit';add.append(addButton);add.addEventListener('submit',event=>{event.preventDefault();const length=parse(lenInput.value);if(!Number.isFinite(length)||length<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');return;}area.parts.push({name:nameInput.value.trim()||`Teilstrecke ${parts.length+1}`,length});save();render();});card.append(add);
+          const total=parts.reduce((sum,p)=>sum+(Number(p.length)||0),0);const summary=node('div','e-total');summary.append(node('span','',`Bereichssumme · ${parts.length} Teilstrecken`),node('strong','',`${fmt(total)} m`));card.append(summary);host.append(card);
+          sums.set(area.type,(sums.get(area.type)||0)+total);grand+=total;
+        }
+        const summary=el('e-summary');summary.replaceChildren();if(!sums.size)summary.append(node('p','e-empty','Noch keine Leitungen erfasst.'));
+        for(const [type,length] of sums){const row=node('div','e-summary-row');row.append(node('span','',type),node('strong','',`${fmt(length)} m`));summary.append(row);}
+        if(sums.size){const row=node('div','e-total');row.append(node('span','','Gesamt über alle Leitungstypen'),node('strong','',`${fmt(grand)} m`));summary.append(row);}
+      }
+      render();
+    })();
   </script>
 </body>
 </html>
