@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f5f0">
+  <meta name="theme-color" content="#173f35">
   <title>Baurechner – Mauerwerk</title>
   <style>
     :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #192521; background: #f6f5f0; }
@@ -100,14 +100,76 @@
     .empty-icon { width: 62px; height: 62px; margin: 0 auto 18px; border-radius: 18px; background: #eaf3eb; display: grid; place-items: center; font-size: 28px; }
     [hidden] { display: none !important; }
     @media (max-width: 720px) { main { padding-top: 28px; } .workspace { grid-template-columns: 1fr; gap: 24px; } .tabs { gap: 9px; } .tab { padding: 15px; min-height: 112px; } .tab[aria-selected="true"] { padding: 14px; } .panel-inner { padding: 22px; } .opening-row .fields { grid-template-columns: 1fr; } .joint-fields .fields { grid-template-columns: 1fr; } }
+
+    /* Design-Edition: rein visuelle Änderungen, keine Änderung an Berechnungsfunktionen */
+    :root { background:#f1f5f3; color:#18332a; }
+    body { background:linear-gradient(180deg,#edf5f0 0,#f6f8f7 310px); min-height:100vh; }
+    header { background:#173f35; border:0; color:white; padding:15px 0; box-shadow:0 4px 22px #15382b22; }
+    .brand { font-size:1.19rem; gap:13px; }
+    .brand-mark { background:#31865d; border-radius:13px; width:43px; height:43px; box-shadow:inset 0 1px 2px #ffffff35; }
+    .brand-tagline { display:block; font-size:.7rem; letter-spacing:.01em; font-weight:450; color:#d0e4d7; margin-top:2px; }
+    .design-chip { margin-left:auto; font-size:.7rem; letter-spacing:.04em; font-weight:700; border:1px solid #75a48b; border-radius:100px; padding:7px 12px; color:#e5f5eb; }
+    main { padding-top:32px; }
+    h1 { font-size:clamp(1.85rem,4vw,2.65rem); letter-spacing:-.045em; margin:8px 0 10px; }
+    .intro { margin-bottom:23px; }
+    .eyebrow { color:#26714e; }
+    .tabs { gap:10px; margin-bottom:16px; }
+    .tab { min-height:74px; border-radius:14px; padding:15px 18px; box-shadow:0 2px 10px #153b2810; }
+    .tab[aria-selected="true"] { background:#e6f3ea; border-color:#2b7954; padding:14px 17px; box-shadow:0 3px 14px #2b79541a; }
+    .tab strong { font-size:1.04rem; }
+    .tab small { font-size:.79rem; }
+    .panel { border-radius:19px; border-color:#dce8df; box-shadow:0 8px 28px #163b2710; }
+    .panel-inner { padding:clamp(18px,3vw,30px); }
+    .workspace { gap:18px; margin-top:22px; grid-template-columns:minmax(0,1fr) minmax(300px,.94fr); }
+    h2 { font-size:1.35rem; }
+    h3 { font-size:1rem; }
+    .fields { gap:11px; }
+    label.field { font-size:.86rem; }
+    input { padding:10px 43px 10px 12px; font-size:1rem; border-radius:9px; background:#fcfefd; min-height:43px; }
+    .field span { margin-bottom:5px; }
+    .unit { padding:7px; }
+    .mode { padding:9px 12px; }
+    .stone-fields,.joint-fields,.openings { margin-top:19px; padding-top:18px; }
+    .form-title { margin-bottom:12px; }
+    .add-wall,.calculate { border-radius:10px; }
+    .calculate { background:#21734d; box-shadow:0 4px 12px #21734d26; }
+    .result { background:linear-gradient(160deg,#edf7ef,#e2f1e7); border-top:1px solid #c8e0d0; padding:20px; margin-top:19px; }
+    .result .caption { color:#2a6646; }
+    .value { color:#135c3a; font-size:clamp(2rem,4vw,2.65rem); }
+    .stone-result { border-color:#cbded0; }
+    .stone-result dl { background:#ffffff80; padding:12px; border-radius:12px; }
+    .cross-card { border-radius:14px; box-shadow:0 2px 10px #163b270b; }
+    .cross-example-note { background:#e6f1e9; }
+    .wall-list li { background:#fbfdfb; }
+    .muted { color:#62756b; }
+    .info-fold { border:1px solid #d9e6de; background:#f6faf7; border-radius:10px; padding:10px 12px; margin:12px 0; }
+    .info-fold summary { cursor:pointer; color:#276747; font-size:.85rem; font-weight:750; }
+    .info-fold .muted { margin-top:9px; }
+    @media (max-width:720px) {
+      .wrap { width:calc(100% - 22px); }
+      header { padding:11px 0; }
+      .brand { font-size:1.05rem; }
+      .design-chip { font-size:.61rem; padding:6px 8px; }
+      main { padding-top:22px; }
+      .workspace { grid-template-columns:1fr; gap:15px; }
+      .tabs { gap:8px; }
+      .tab { min-height:75px; padding:12px; }
+      .tab[aria-selected="true"] { padding:11px; }
+      .tab small { font-size:.73rem; }
+      .panel-inner { padding:17px; }
+      .joint-fields .fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .result { padding:16px; }
+      .stone-result dl { grid-template-columns:minmax(0,1fr) auto; font-size:.84rem; }
+    }
+    @media (max-width:370px) { .joint-fields .fields { grid-template-columns:1fr; } .design-chip { display:none; } }
   </style>
 </head>
 <body>
-  <header><div class="wrap brand"><span class="brand-mark" aria-hidden="true">▦</span>Baurechner</div></header>
+  <header><div class="wrap brand"><span class="brand-mark" aria-hidden="true">▦</span><span>Baurechner<small class="brand-tagline">Planen. Berechnen. Bauen.</small></span><span class="design-chip">Designvorschau</span></div></header>
   <main class="wrap">
     <span class="eyebrow">Projektplanung</span>
-    <h1>Was möchtest du berechnen?</h1>
-    <p class="intro">Wähle einen Bereich und trage deine Maße ein.</p>
+    <h1>Dein Bauprojekt im Überblick</h1>
+    <p class="intro">Maße eingeben, Materialbedarf berechnen und die Steinaufteilung nachvollziehen.</p>
     <div class="tabs" role="tablist" aria-label="Rechnerbereich">
       <button class="tab" id="tab-wall" type="button" role="tab" aria-controls="wall" aria-selected="true"><strong>Mauerwerk</strong><small>Wandvolumen berechnen</small></button>
       <button class="tab" id="tab-cable" type="button" role="tab" aria-controls="cable" aria-selected="false"><strong>Leitungsstrecken</strong><small>Längen je Leitungstyp sammeln · bald verfügbar</small></button>
