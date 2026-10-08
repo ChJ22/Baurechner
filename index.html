@@ -278,9 +278,9 @@
         <h2>Elektroleitungen</h2><p class="muted">Bereiche anlegen, Teilstrecken messen und Längen je Leitungstyp automatisch addieren.</p>
         <form id="e-form" class="e-card">
           <h3>Neuen Bereich anlegen</h3>
-          <div class="e-grid"><label>Bereich / Verbraucher<input id="e-area" placeholder="z. B. Küche – Steckdosen" required maxlength="100"></label>
+          <div class="e-grid"><label>Bereich / Verbraucher<select id="e-area-preset"><option value="">Bitte Bereich auswählen …</option><optgroup label="Wohnräume"><option>Wohnzimmer</option><option>Schlafzimmer</option><option>Kinderzimmer</option><option>Arbeitszimmer</option><option>Flur / Diele</option></optgroup><optgroup label="Versorgung und Nebenräume"><option>Küche</option><option>Badezimmer</option><option>Gäste-WC</option><option>Hauswirtschaftsraum</option><option>Keller</option><option>Garage</option><option>Dachboden</option><option>Außenbereich / Garten</option><option>Verteilung / Technikraum</option></optgroup><option value="custom">Eigener Bereich …</option></select></label>
           <label>Leitungstyp<select id="e-type"><option>NYM-J 3×1,5 mm²</option><option>NYM-J 5×1,5 mm²</option><option>NYM-J 3×2,5 mm²</option><option>NYM-J 5×2,5 mm²</option><option>NYM-J 5×4 mm²</option><option>NYM-J 5×6 mm²</option><option>NYM-J 5×10 mm²</option><option value="custom">Eigener Leitungstyp …</option></select></label></div>
-          <label id="e-custom-wrap" hidden>Eigener Leitungstyp<input id="e-custom" maxlength="80" placeholder="z. B. NYM-J 7×1,5 mm²"></label>
+          <label id="e-area-custom-wrap" hidden>Eigenen Bereich eingeben<input id="e-area" placeholder="z. B. Werkstatt – Beleuchtung" maxlength="100"></label><label id="e-custom-wrap" hidden>Eigener Leitungstyp<input id="e-custom" maxlength="80" placeholder="z. B. NYM-J 7×1,5 mm²"></label>
           <button class="calculate" type="submit">+ Bereich anlegen</button><p class="error" id="e-error" role="alert"></p>
         </form>
         <div id="e-areas"></div>
@@ -830,10 +830,11 @@
       const node = (tag, cls, value) => { const n=document.createElement(tag); if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n; };
       const btn = (label, click, cls='e-action') => {const b=node('button',cls,label);b.type='button';b.addEventListener('click',click);return b;};
       el('e-type').addEventListener('change',()=>{el('e-custom-wrap').hidden=el('e-type').value!=='custom';});
+      el('e-area-preset').addEventListener('change',()=>{el('e-area-custom-wrap').hidden=el('e-area-preset').value!=='custom';});
       el('e-form').addEventListener('submit',e=>{
-        e.preventDefault();const name=el('e-area').value.trim();const type=el('e-type').value==='custom'?el('e-custom').value.trim():el('e-type').value;
+        e.preventDefault();const name=el('e-area-preset').value==='custom'?el('e-area').value.trim():el('e-area-preset').value;const type=el('e-type').value==='custom'?el('e-custom').value.trim():el('e-type').value;
         if(!name||!type){el('e-error').textContent='Bitte Bereich und Leitungstyp angeben.';return;}
-        areas.push({id:Date.now()+'-'+Math.random(),name,type,parts:[]});el('e-area').value='';el('e-error').textContent='';save();render();
+        areas.push({id:Date.now()+'-'+Math.random(),name,type,parts:[]});el('e-area-preset').value='';el('e-area').value='';el('e-area-custom-wrap').hidden=true;el('e-error').textContent='';save();render();
       });
       function render(){
         const host=el('e-areas');host.replaceChildren();
