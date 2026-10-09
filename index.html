@@ -188,7 +188,7 @@
         <button type="button" class="nav-tile" data-open-module="wall"><span class="nav-symbol">▦</span><strong>Mauerwerk</strong><small>Wände, Steine und Mörtel berechnen</small><span class="nav-open">Berechnen →</span></button>
         <button type="button" class="nav-tile" data-open-module="cable"><span class="nav-symbol">⌁</span><strong>Elektroleitungen</strong><small>Bereiche, Teilstrecken und Materialbedarf</small><span class="nav-open">Berechnen →</span></button>
       </div>
-      <div class="nav-overview"><h2>Materialübersicht</h2><p class="muted">Aktuelle Ergebnisse deiner Rechner – noch ohne getrennte Bauprojekte.</p><div id="nav-wall-summary" class="nav-summary">Noch keine Mauerwerksberechnung vorhanden.</div><div id="nav-cable-summary" class="nav-summary">Noch keine Elektroleitungen erfasst.</div></div>
+      <div class="nav-overview"><h2>Materialübersicht</h2><p class="muted" style="font-size:.75rem">Version 09.10.2026 – Einzelmaterial</p><p class="muted">Aktuelle Ergebnisse deiner Rechner – noch ohne getrennte Bauprojekte.</p><div id="nav-wall-summary" class="nav-summary">Noch keine Mauerwerksberechnung vorhanden.</div><div id="nav-cable-summary" class="nav-summary">Noch keine Elektroleitungen erfasst.</div></div>
       <div class="nav-reset-area"><button type="button" id="reset-all-analysis" class="nav-reset-button">↺ Neue Analyse starten · alle Daten zurücksetzen</button><p class="muted">Löscht die gespeicherten Wände und Elektroleitungsbereiche auf diesem Gerät. Nicht rückgängig zu machen.</p></div>
     </section>
     <div id="module-navigation" hidden><button type="button" id="nav-home" class="nav-back">← Zurück zur Übersicht</button><span id="nav-module-title" class="nav-module-title"></span></div>
@@ -345,6 +345,50 @@
       const extraCount = (Array.isArray(areas)?areas:[]).reduce((sum,a)=>sum+(Array.isArray(a.materials)?a.materials.reduce((n,m)=>n+(Number(m.qty)||0),0):0),0);
       const cableHeading = document.createElement('strong'); cableHeading.textContent = '⌁ Elektroleitungen'; cableSummary.append(cableHeading);
       const cableDetail = document.createElement('p'); cableDetail.textContent = `${Array.isArray(areas)?areas.length:0} Bereiche` + (sums.size ? ` · ${count} Teilstrecken` : ''); cableSummary.append(cableDetail); if(extraCount){const m=document.createElement('p');m.textContent=`${extraCount} Stk. Zusatzmaterial erfasst`;cableSummary.append(m);}
+      // Einzelmaterial direkt unter der Gesamtmenge ausgeben – unabhängig von den weiteren Einkaufslisten.
+      const detailMaterials = new Map();
+      for (const area of (Array.isArray(areas) ? areas : [])) {
+        for (const material of (Array.isArray(area.materials) ? area.materials : [])) {
+          const quantity = Number(material.qty);
+          if (!Number.isFinite(quantity) || quantity <= 0) continue;
+          const category = String(material.category || 'Zusatzmaterial').trim();
+          const name = String(material.name || 'Unbenannter Artikel').trim();
+          const room = String(area.name || 'Ohne Bereich').trim();
+          const key = JSON.stringify([category, name]);
+          if (!detailMaterials.has(key)) detailMaterials.set(key, {total: 0, rooms: new Map()});
+          const item = detailMaterials.get(key);
+          item.total += quantity;
+          item.rooms.set(room, (item.rooms.get(room) || 0) + quantity);
+        }
+      }
+      if (detailMaterials.size) {
+        const detailSection = document.createElement('section');
+        detailSection.className = 'nav-shopping-group';
+        const heading = document.createElement('h4');
+        heading.textContent = 'Zusatzmaterial – Einzelteile';
+        detailSection.append(heading);
+        for (const [key, item] of detailMaterials) {
+          const [category, name] = JSON.parse(key);
+          const line = document.createElement('div');
+          line.className = 'nav-shopping-row';
+          const title = document.createElement('span');
+          title.textContent = `${category} · ${name}`;
+          const quantity = document.createElement('strong');
+          quantity.textContent = `${item.total.toLocaleString('de-DE')} Stk.`;
+          line.append(title, quantity);
+          detailSection.append(line);
+          const rooms = document.createElement('div');
+          rooms.className = 'nav-shopping-details';
+          for (const [room, number] of item.rooms) {
+            const line = document.createElement('p');
+            line.textContent = `${room}: ${number.toLocaleString('de-DE')} Stk.`;
+            rooms.append(line);
+          }
+          detailSection.append(rooms);
+        }
+        cableSummary.append(detailSection);
+      }
+
       const fmtShopping = n => n.toLocaleString('de-DE',{maximumFractionDigits:2});
       const sectionShopping = title => {
         const section=document.createElement('section'); section.className='nav-shopping-group';
@@ -397,12 +441,7 @@
         const [channelType,partType]=JSON.parse(key);
         shoppingRow(section,`${channelType} · ${partType}`,`${fmtShopping(g.total)} Stk.`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} Stk.`])));
       }}
-      const materialEntries=safeAreas.flatMap(area=>(Array.isArray(area.materials)?area.materials:[]).map(m=>({...m,room:String(area.name||'Ohne Bereich')})));
-      const materials=grouped(materialEntries,m=>JSON.stringify([m.category||'Zusatzmaterial',m.name||'Unbenannter Artikel']),m=>Number(m.qty),m=>m.room);
-      if(materials.size){const section=sectionShopping('Zusatzmaterial');for(const [key,g] of materials){
-        const [category,name]=JSON.parse(key);
-        shoppingRow(section,`${category} · ${name}`,`${fmtShopping(g.total)} Stk.`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} Stk.`])));
-      }}
+
     }
     function showTab(which) {
       const wallActive = which === 'wall';
