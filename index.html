@@ -884,6 +884,8 @@
       const el = id => document.getElementById(id);
       const fmt = n => new Intl.NumberFormat('de-DE', {maximumFractionDigits:2}).format(n);
       const parse = s => Number(String(s).trim().replace(',', '.'));
+      // Vorhandene Materialeinträge unter der bisherigen Bezeichnung übernehmen.
+      areas.forEach(area => { if(Array.isArray(area.materials)) area.materials.forEach(m => { if(m.name === 'Befestigungsdübel') m.name = 'Kabelschelle (schraubbar)'; }); });
       const save = () => { try { localStorage.setItem(storageKey, JSON.stringify(areas)); } catch (_) {} };
       const node = (tag, cls, value) => { const n=document.createElement(tag); if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n; };
       const btn = (label, click, cls='e-action') => {const b=node('button',cls,label);b.type='button';b.addEventListener('click',click);return b;};
@@ -920,7 +922,7 @@
           ['Kabelclip','Kleine Kabelhalterung, je nach Bauart klebend oder schraubbar.','clip'],
           ['Rohrschelle','Befestigung für ein Installationsrohr.','pipe'],
           ['Kabelbinder','Bindeband zum Bündeln von Leitungen; nicht überall als dauerhafte Befestigung geeignet.','tie'],
-          ['Befestigungsdübel','Dübel für eine geeignete Schraubbefestigung. Beispielbild zeigt eine Befestigungsschelle mit Schraube, keinen einzelnen Dübel.','anchor']
+          ['Kabelschelle (schraubbar)','Halbrunde Kabelschelle zur Befestigung einer Leitung mit Schraube, je nach Untergrund mit geeignetem Dübel.','anchor']
         ],
         'Verbindungselemente': [
           ['Verbindungsklemme 2 Leiter','Klemme für zwei geeignete Leiter; Datenblatt beachten.','terminal'],
@@ -963,7 +965,7 @@
           'Kabelclip':'kabelclip.webp',
           'Rohrschelle':'rohrschelle.webp',
           'Kabelbinder':'kabelbinder.webp',
-          'Befestigungsdübel':'befestigungsduebel.webp',
+          'Kabelschelle (schraubbar)':'befestigungsduebel.webp',
           'Verbindungsklemme':'klemme.webp'
         };
         const updatePreview=()=>{
