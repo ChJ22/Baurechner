@@ -167,7 +167,15 @@
     .electro {max-width:980px;margin:auto}.electro h2{margin:0 0 8px}.e-card{background:#fff;border:1px solid #dce6dd;border-radius:17px;padding:20px;margin:18px 0;box-shadow:0 3px 16px #183e2610}.e-card h3{margin:0 0 15px}.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.electro label{display:block;font-size:.9rem;font-weight:700;margin:10px 0}.electro label input,.electro label select{display:block;width:100%;margin-top:7px;border:1px solid #cbd4cc;border-radius:10px;background:#fff;color:#192521;font-size:1rem;padding:12px;min-width:0}.electro button{cursor:pointer}.e-row{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:9px;align-items:end;margin:10px 0}.e-row label{margin:0}.e-row button,.e-action{border:1px solid #b9d1c0;background:#eff7f0;color:#245b42;border-radius:9px;padding:12px;font-weight:700}.e-row button{color:#a02c25}.e-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.e-head button{color:#a02c25;background:none;border:0;padding:8px}.e-total{background:#edf7ee;border-radius:12px;padding:15px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.e-total strong{color:#246249;font-size:1.4rem}.e-summary-row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e3ebe4}.e-summary-row strong{white-space:nowrap}.e-breakdown{margin:0 0 16px 0;padding:0 0 8px 14px;border-left:3px solid #c7dfcc}.e-breakdown-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:.9rem;color:#526358}.e-breakdown-row span{overflow-wrap:anywhere}.e-breakdown-row strong{white-space:nowrap;color:#245b42}.e-empty{color:#66776c;padding:14px 0}.e-note{font-size:.85rem;color:#66776c}.e-add{margin-top:12px}.e-add .calculate{margin:0}.electro [hidden]{display:none!important}@media(max-width:650px){.e-grid{grid-template-columns:1fr}.e-card{padding:15px}.e-row{grid-template-columns:minmax(0,1fr) 85px auto;gap:6px}.e-row button{padding:12px 9px}}
 .nav-reset-area{margin-top:24px;padding:18px;border:1px solid #ead7d7;border-radius:16px;background:#fffafa}.nav-reset-area p{margin:9px 0 0;font-size:.88rem}.nav-reset-button{font:inherit;font-weight:700;color:#8c2d2d;background:white;border:1px solid #c98d8d;border-radius:11px;padding:12px 16px;cursor:pointer;width:100%;text-align:center}.nav-reset-button:hover{background:#fff0f0}
     .nav-dashboard{padding:12px 0 30px}.nav-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0}.nav-tile{font:inherit;text-align:left;cursor:pointer;border:1px solid #d8e6da;background:#fff;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:9px;box-shadow:0 5px 18px #163d2510;color:#17392a}.nav-tile:hover,.nav-tile:focus-visible{border-color:#448e61;box-shadow:0 7px 22px #163d2520}.nav-symbol{font-size:2rem;color:#277047}.nav-tile strong{font-size:1.25rem}.nav-tile small{font-size:.9rem;color:#637369}.nav-open{color:#24764a;font-weight:700;margin-top:8px}.nav-overview{border:1px solid #d8e6da;border-radius:20px;padding:22px;background:#fff}.nav-overview h2{margin:0 0 8px}.nav-summary{border-top:1px solid #e4eee5;padding:14px 0}.nav-summary p{margin:6px 0 0;color:#52665a;font-size:.93rem}.nav-back{font:inherit;cursor:pointer;background:#eaf4ec;color:#1c6340;border:1px solid #bed9c5;border-radius:11px;padding:12px 15px;font-weight:700}.nav-module-title{margin-left:14px;font-weight:700;color:#2d5940}#module-navigation{margin:18px 0 22px}#module-navigation[hidden],#dashboard[hidden],.panel[hidden]{display:none!important}@media(max-width:650px){.nav-tiles{grid-template-columns:1fr}.nav-tile{padding:18px}}
-  </style>
+  
+    .nav-shopping-group{margin-top:1rem;padding-top:.65rem;border-top:1px solid #e0e9df}
+    .nav-shopping-group h4{font-size:1rem;margin:.2rem 0 .7rem;color:#1d3e2e}
+    .nav-shopping-row{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.45rem 0;border-bottom:1px solid #eef1ed}
+    .nav-shopping-row span{min-width:0;overflow-wrap:anywhere}
+    .nav-shopping-row strong{white-space:nowrap;color:#286745}
+    .nav-shopping-details{padding:.2rem 0 .4rem .65rem;color:#607368;font-size:.86rem}
+    .nav-shopping-details p{margin:.15rem 0}
+</style>
 </head>
 <body>
   <header><div class="wrap brand"><span class="brand-mark" aria-hidden="true">▦</span><span>Baurechner<small class="brand-tagline">Planen. Berechnen. Bauen.</small></span><span class="design-chip">Designvorschau</span></div></header>
@@ -337,7 +345,64 @@
       const extraCount = (Array.isArray(areas)?areas:[]).reduce((sum,a)=>sum+(Array.isArray(a.materials)?a.materials.reduce((n,m)=>n+(Number(m.qty)||0),0):0),0);
       const cableHeading = document.createElement('strong'); cableHeading.textContent = '⌁ Elektroleitungen'; cableSummary.append(cableHeading);
       const cableDetail = document.createElement('p'); cableDetail.textContent = `${Array.isArray(areas)?areas.length:0} Bereiche` + (sums.size ? ` · ${count} Teilstrecken` : ''); cableSummary.append(cableDetail); if(extraCount){const m=document.createElement('p');m.textContent=`${extraCount} Stk. Zusatzmaterial erfasst`;cableSummary.append(m);}
-      for (const [type,meters] of sums) { const line = document.createElement('p'); line.textContent = `${type}: ${meters.toLocaleString('de-DE',{maximumFractionDigits:2})} m`; cableSummary.append(line); }
+      const fmtShopping = n => n.toLocaleString('de-DE',{maximumFractionDigits:2});
+      const sectionShopping = title => {
+        const section=document.createElement('section'); section.className='nav-shopping-group';
+        const h=document.createElement('h4'); h.textContent=title; section.append(h); cableSummary.append(section); return section;
+      };
+      const shoppingRow=(section,label,amount,rooms) => {
+        const row=document.createElement('div');row.className='nav-shopping-row';
+        const name=document.createElement('span');name.textContent=label;
+        const qty=document.createElement('strong');qty.textContent=amount;
+        row.append(name,qty);section.append(row);
+        if(rooms&&rooms.size){
+          const details=document.createElement('div');details.className='nav-shopping-details';
+          for(const [room,value] of rooms){const p=document.createElement('p');p.textContent=`${room}: ${value}`;details.append(p);}
+          section.append(details);
+        }
+      };
+      const grouped=(entries,keyOf,amountOf,roomOf) => {
+        const result=new Map();
+        for(const entry of entries){const key=keyOf(entry),amount=amountOf(entry);
+          if(!key||!Number.isFinite(amount)||amount<=0)continue;
+          if(!result.has(key))result.set(key,{total:0,rooms:new Map()});
+          const group=result.get(key);group.total+=amount;
+          const room=roomOf(entry);group.rooms.set(room,(group.rooms.get(room)||0)+amount);
+        }
+        return result;
+      };
+      const safeAreas=Array.isArray(areas)?areas:[];
+      if(sums.size){
+        const section=sectionShopping('Elektroleitungen');
+        for(const [type,meters] of sums){
+          const rooms=new Map();
+          for(const area of safeAreas){
+            const t=area.type||area.cableType||area.leitungstyp||'';
+            if(t!==type)continue;
+            for(const part of (area.parts||area.segments||area.stretches||area.routes||[])){
+              const n=Number(part.length??part.meters??part.m??0);
+              if(Number.isFinite(n)&&n>0){const room=String(area.name||'Ohne Bereich');rooms.set(room,(rooms.get(room)||0)+n);}
+            }
+          }
+          shoppingRow(section,type,`${fmtShopping(meters)} m`,new Map([...rooms].map(([room,n])=>[room,`${fmtShopping(n)} m`])));
+        }
+      }
+      const channelEntries=safeAreas.flatMap(area=>(Array.isArray(area.channels)?area.channels:[]).map(c=>({...c,room:String(area.name||'Ohne Bereich')})));
+      const channels=grouped(channelEntries,c=>String(c.type||''),c=>Number(c.length),c=>c.room);
+      if(channels.size){const section=sectionShopping('Kabelkanäle');for(const [type,g] of channels)
+        shoppingRow(section,type,`${fmtShopping(g.total)} m`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} m`])));}
+      const partEntries=safeAreas.flatMap(area=>(Array.isArray(area.channelParts)?area.channelParts:[]).map(p=>({...p,room:String(area.name||'Ohne Bereich')})));
+      const channelParts=grouped(partEntries,p=>JSON.stringify([p.channelType||'Ohne Kanaltyp',p.type||'Einzelteil']),p=>Number(p.quantity),p=>p.room);
+      if(channelParts.size){const section=sectionShopping('Kabelkanal-Einzelteile');for(const [key,g] of channelParts){
+        const [channelType,partType]=JSON.parse(key);
+        shoppingRow(section,`${channelType} · ${partType}`,`${fmtShopping(g.total)} Stk.`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} Stk.`])));
+      }}
+      const materialEntries=safeAreas.flatMap(area=>(Array.isArray(area.materials)?area.materials:[]).map(m=>({...m,room:String(area.name||'Ohne Bereich')})));
+      const materials=grouped(materialEntries,m=>JSON.stringify([m.category||'Zusatzmaterial',m.name||'Unbenannter Artikel']),m=>Number(m.qty),m=>m.room);
+      if(materials.size){const section=sectionShopping('Zusatzmaterial');for(const [key,g] of materials){
+        const [category,name]=JSON.parse(key);
+        shoppingRow(section,`${category} · ${name}`,`${fmtShopping(g.total)} Stk.`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} Stk.`])));
+      }}
     }
     function showTab(which) {
       const wallActive = which === 'wall';
