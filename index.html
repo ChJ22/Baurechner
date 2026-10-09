@@ -162,7 +162,7 @@
       .stone-result dl { grid-template-columns:minmax(0,1fr) auto; font-size:.84rem; }
     }
     @media (max-width:370px) { .joint-fields .fields { grid-template-columns:1fr; } .design-chip { display:none; } }
-    .electro {max-width:980px;margin:auto}.electro h2{margin:0 0 8px}.e-card{background:#fff;border:1px solid #dce6dd;border-radius:17px;padding:20px;margin:18px 0;box-shadow:0 3px 16px #183e2610}.e-card h3{margin:0 0 15px}.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.electro label{display:block;font-size:.9rem;font-weight:700;margin:10px 0}.electro label input,.electro label select{display:block;width:100%;margin-top:7px;border:1px solid #cbd4cc;border-radius:10px;background:#fff;color:#192521;font-size:1rem;padding:12px;min-width:0}.electro button{cursor:pointer}.e-row{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:9px;align-items:end;margin:10px 0}.e-row label{margin:0}.e-row button,.e-action{border:1px solid #b9d1c0;background:#eff7f0;color:#245b42;border-radius:9px;padding:12px;font-weight:700}.e-row button{color:#a02c25}.e-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.e-head button{color:#a02c25;background:none;border:0;padding:8px}.e-total{background:#edf7ee;border-radius:12px;padding:15px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.e-total strong{color:#246249;font-size:1.4rem}.e-summary-row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e3ebe4}.e-summary-row strong{white-space:nowrap}.e-empty{color:#66776c;padding:14px 0}.e-note{font-size:.85rem;color:#66776c}.e-add{margin-top:12px}.e-add .calculate{margin:0}.electro [hidden]{display:none!important}@media(max-width:650px){.e-grid{grid-template-columns:1fr}.e-card{padding:15px}.e-row{grid-template-columns:minmax(0,1fr) 85px auto;gap:6px}.e-row button{padding:12px 9px}}
+    .electro {max-width:980px;margin:auto}.electro h2{margin:0 0 8px}.e-card{background:#fff;border:1px solid #dce6dd;border-radius:17px;padding:20px;margin:18px 0;box-shadow:0 3px 16px #183e2610}.e-card h3{margin:0 0 15px}.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.electro label{display:block;font-size:.9rem;font-weight:700;margin:10px 0}.electro label input,.electro label select{display:block;width:100%;margin-top:7px;border:1px solid #cbd4cc;border-radius:10px;background:#fff;color:#192521;font-size:1rem;padding:12px;min-width:0}.electro button{cursor:pointer}.e-row{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:9px;align-items:end;margin:10px 0}.e-row label{margin:0}.e-row button,.e-action{border:1px solid #b9d1c0;background:#eff7f0;color:#245b42;border-radius:9px;padding:12px;font-weight:700}.e-row button{color:#a02c25}.e-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.e-head button{color:#a02c25;background:none;border:0;padding:8px}.e-total{background:#edf7ee;border-radius:12px;padding:15px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.e-total strong{color:#246249;font-size:1.4rem}.e-summary-row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e3ebe4}.e-summary-row strong{white-space:nowrap}.e-breakdown{margin:0 0 16px 0;padding:0 0 8px 14px;border-left:3px solid #c7dfcc}.e-breakdown-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:.9rem;color:#526358}.e-breakdown-row span{overflow-wrap:anywhere}.e-breakdown-row strong{white-space:nowrap;color:#245b42}.e-empty{color:#66776c;padding:14px 0}.e-note{font-size:.85rem;color:#66776c}.e-add{margin-top:12px}.e-add .calculate{margin:0}.electro [hidden]{display:none!important}@media(max-width:650px){.e-grid{grid-template-columns:1fr}.e-card{padding:15px}.e-row{grid-template-columns:minmax(0,1fr) 85px auto;gap:6px}.e-row button{padding:12px 9px}}
   </style>
 </head>
 <body>
@@ -866,7 +866,29 @@
           sums.set(area.type,(sums.get(area.type)||0)+total);grand+=total;
         }
         const summary=el('e-summary');summary.replaceChildren();if(!sums.size)summary.append(node('p','e-empty','Noch keine Leitungen erfasst.'));
-        for(const [type,length] of sums){const row=node('div','e-summary-row');row.append(node('span','',type),node('strong','',`${fmt(length)} m`));summary.append(row);}
+        for(const [type,length] of sums){
+          if(length<=0)continue;
+          const row=node('div','e-summary-row');row.append(node('span','',type),node('strong','',`${fmt(length)} m`));summary.append(row);
+          // Pro Leitungstyp nach Bereich und Verwendungszweck gruppieren.
+          const breakdown=new Map();
+          for(const area of areas){
+            if(area.type!==type)continue;
+            for(const part of (Array.isArray(area.parts)?area.parts:[])){
+              const meters=Number(part.length);
+              if(!Number.isFinite(meters)||meters<=0)continue;
+              const purpose=String(part.name||'Ohne Bezeichnung').trim()||'Ohne Bezeichnung';
+              const key=JSON.stringify([area.name,purpose]);
+              breakdown.set(key,(breakdown.get(key)||0)+meters);
+            }
+          }
+          const details=node('div','e-breakdown');
+          for(const [key,meters] of breakdown){
+            const [areaName,purpose]=JSON.parse(key);
+            const detail=node('div','e-breakdown-row');
+            detail.append(node('span','',`${areaName} · ${purpose}`),node('strong','',`${fmt(meters)} m`));details.append(detail);
+          }
+          summary.append(details);
+        }
         if(sums.size){const row=node('div','e-total');row.append(node('span','','Gesamt über alle Leitungstypen'),node('strong','',`${fmt(grand)} m`));summary.append(row);}
       }
       render();
