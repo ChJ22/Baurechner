@@ -288,7 +288,7 @@
 
     <section class="panel" id="cable" role="tabpanel" aria-labelledby="tab-cable" hidden>
       <div class="panel-inner electro">
-        <h2>Elektroleitungen</h2><p class="muted">Bereiche anlegen, Teilstrecken messen und Längen je Leitungstyp automatisch addieren.</p>
+        <h2>Elektroleitungen</h2><p class="muted">Bereiche anlegen, Elektro- und Kabelkanal-Teilstrecken messen und Längen je Typ automatisch addieren.</p>
         <form id="e-form" class="e-card">
           <h3>Neuen Bereich anlegen</h3>
           <div class="e-grid"><label>Bereich / Verbraucher<select id="e-area-preset"><option value="">Bitte Bereich auswählen …</option><optgroup label="Wohnräume"><option>Wohnzimmer</option><option>Schlafzimmer</option><option>Kinderzimmer</option><option>Arbeitszimmer</option><option>Flur / Diele</option></optgroup><optgroup label="Versorgung und Nebenräume"><option>Küche</option><option>Badezimmer</option><option>Gäste-WC</option><option>Hauswirtschaftsraum</option><option>Keller</option><option>Garage</option><option>Dachboden</option><option>Außenbereich / Garten</option><option>Verteilung / Technikraum</option></optgroup><option value="custom">Eigener Bereich …</option></select></label>
@@ -297,7 +297,7 @@
           <button class="calculate" type="submit">+ Bereich anlegen</button><p class="error" id="e-error" role="alert"></p>
         </form>
         <div id="e-areas"></div>
-        <div class="e-card"><h3>Materialübersicht nach Leitungstyp</h3><div id="e-summary" aria-live="polite"></div></div>
+        <div class="e-card"><h3>Materialübersicht: Leitungen, Kabelkanäle und Zusatzmaterial</h3><div id="e-summary" aria-live="polite"></div></div>
         <p class="muted" style="font-size:.85rem">Nur Mengenermittlung. Keine Prüfung von Strombelastbarkeit, Absicherung oder zulässiger Verlegeart. Elektroinstallationen fachgerecht planen und ausführen lassen.</p>
       </div>
     </section>
@@ -945,6 +945,57 @@
         };
         return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" role="img" aria-label="Schematische Beispielabbildung">'+(shapes[kind]||shapes.dose)+'</svg>';
       };
+
+      // Kabelkanäle: getrennt von Elektroleitungen nach Bereich, Kanaltyp und Teilstrecken.
+      const channelPresets = ['Mini-Kabelkanal 10×10 mm','Mini-Kabelkanal 15×15 mm',
+        'Kabelkanal 20×10 mm','Kabelkanal 20×20 mm','Kabelkanal 30×15 mm',
+        'Kabelkanal 40×25 mm','Kabelkanal 60×40 mm','Brüstungskanal','Eigener Kabelkanal …'];
+      const renderChannels = (area,card) => {
+        if(!Array.isArray(area.channels))area.channels=[];
+        const section=node('section','e-material');
+        section.append(node('h4','','Kabelkanäle – Teilstrecken'));
+        section.append(node('p','e-note','Pro Bereich mehrere Kabelkanaltypen und Teilstrecken erfassen. Die Längen werden nach Kanaltyp zusammengezählt.'));
+        const form=node('form','e-material-form');
+        const typeLabel=node('label','e-material-full','Kabelkanaltyp');
+        const select=node('select');
+        channelPresets.forEach(t=>{const o=node('option','',t);o.value=t;select.append(o);});
+        typeLabel.append(select);
+        const customLabel=node('label','e-material-full','Eigene Kanalbezeichnung');
+        const custom=node('input');custom.placeholder='z. B. Kabelkanal 80×40 mm';custom.maxLength=100;customLabel.append(custom);customLabel.hidden=true;
+        select.addEventListener('change',()=>{customLabel.hidden=select.value!=='Eigener Kabelkanal …';custom.required=!customLabel.hidden;});
+        const partLabel=node('label','','Teilstrecke / Verwendung');
+        const part=node('input');part.placeholder='z. B. Wand bis Tür';part.maxLength=100;partLabel.append(part);
+        const lenLabel=node('label','','Länge (m)');
+        const length=node('input');length.inputMode='decimal';length.required=true;length.placeholder='z. B. 2,5';lenLabel.append(length);
+        const add=node('button','calculate e-material-full','+ Kanal-Teilstrecke hinzufügen');add.type='submit';
+        form.append(typeLabel,customLabel,partLabel,lenLabel,add);
+        form.addEventListener('submit',event=>{
+          event.preventDefault();
+          const n=parse(length.value);
+          const type=select.value==='Eigener Kabelkanal …'?custom.value.trim():select.value;
+          if(!type||!Number.isFinite(n)||n<=0){alert('Bitte Kanaltyp und gültige Länge größer 0 eingeben.');return;}
+          area.channels.push({id:Date.now()+'-'+Math.random(),type,name:part.value.trim()||'Ohne Bezeichnung',length:n});
+          save();render();
+        });
+        section.append(form);
+        const grouped=new Map();
+        area.channels.forEach(c=>{
+          const n=Number(c.length);
+          if(!Number.isFinite(n)||n<=0)return;
+          grouped.set(c.type,(grouped.get(c.type)||0)+n);
+          const row=node('div','e-material-item');
+          row.append(node('span','',`${c.type} · ${c.name||'Ohne Bezeichnung'} · ${fmt(n)} m`),
+            btn('Entfernen',()=>{area.channels=area.channels.filter(x=>x!==c);save();render();}));
+          section.append(row);
+        });
+        if(grouped.size){
+          const total=node('div','e-total');
+          total.append(node('span','','Kabelkanäle in diesem Bereich'),
+            node('strong','',`${fmt([...grouped.values()].reduce((a,b)=>a+b,0))} m`));
+          section.append(total);
+        }
+        card.append(section);
+      };
       const renderMaterials = (area,card) => {
         if(!Array.isArray(area.materials))area.materials=[];
         const section=node('section','e-material');section.append(node('h4','','Zusatzmaterial für diesen Bereich'));
@@ -1003,7 +1054,7 @@
             row.append(nameLabel,lenLabel,btn('✕',()=>{area.parts.splice(index,1);save();render();}));rows.append(row);
           });card.append(rows);
           const add=node('form','e-add');const inputs=node('div','e-row');const nameLabel=node('label','','Neue Teilstrecke');const nameChoice=partSelector();nameLabel.append(nameChoice.wrap);const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.inputMode='decimal';lenInput.placeholder='z. B. 4,5';lenInput.required=true;lenLabel.append(lenInput);inputs.append(nameLabel,lenLabel);add.append(inputs);const addButton=node('button','calculate','+ Teilstrecke hinzufügen');addButton.type='submit';add.append(addButton);add.addEventListener('submit',event=>{event.preventDefault();const length=parse(lenInput.value);if(!Number.isFinite(length)||length<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');return;}const name=nameChoice.value();if(!name){alert('Bitte eine Bezeichnung für die Teilstrecke eingeben.');return;}area.parts.push({name,length});save();render();});card.append(add);
-          const total=parts.reduce((sum,p)=>sum+(Number(p.length)||0),0);const summary=node('div','e-total');summary.append(node('span','',`Bereichssumme · ${parts.length} Teilstrecken`),node('strong','',`${fmt(total)} m`));card.append(summary);renderMaterials(area,card);host.append(card);
+          const total=parts.reduce((sum,p)=>sum+(Number(p.length)||0),0);const summary=node('div','e-total');summary.append(node('span','',`Bereichssumme · ${parts.length} Teilstrecken`),node('strong','',`${fmt(total)} m`));card.append(summary);renderChannels(area,card);renderMaterials(area,card);host.append(card);
           sums.set(area.type,(sums.get(area.type)||0)+total);grand+=total;
         }
         const summary=el('e-summary');summary.replaceChildren();if(!sums.size)summary.append(node('p','e-empty','Noch keine Leitungen erfasst.'));
@@ -1029,6 +1080,34 @@
             detail.append(node('span','',`${areaName} · ${purpose}`),node('strong','',`${fmt(meters)} m`));details.append(detail);
           }
           summary.append(details);
+        }
+
+        const channelSums=new Map();
+        for(const area of areas)for(const c of (Array.isArray(area.channels)?area.channels:[])){
+          const n=Number(c.length);
+          if(!Number.isFinite(n)||n<=0)continue;
+          if(!channelSums.has(c.type))channelSums.set(c.type,{total:0,details:new Map()});
+          const group=channelSums.get(c.type);
+          group.total+=n;
+          const key=JSON.stringify([area.name,c.name||'Ohne Bezeichnung']);
+          group.details.set(key,(group.details.get(key)||0)+n);
+        }
+        if(channelSums.size){
+          const extra=node('section','e-material-summary');
+          extra.append(node('h4','','Kabelkanäle – Einkaufsliste nach Typ'));
+          for(const [type,group] of channelSums){
+            const r=node('div','e-summary-row');
+            r.append(node('span','',type),node('strong','',`${fmt(group.total)} m`));extra.append(r);
+            const details=node('div','e-breakdown');
+            for(const [key,n] of group.details){
+              const [room,purpose]=JSON.parse(key);
+              const line=node('div','e-breakdown-row');
+              line.append(node('span','',`${room} · ${purpose}`),node('strong','',`${fmt(n)} m`));
+              details.append(line);
+            }
+            extra.append(details);
+          }
+          summary.append(extra);
         }
         const materialSums=new Map();
         for(const area of areas)for(const m of (Array.isArray(area.materials)?area.materials:[])){
