@@ -994,7 +994,41 @@
             node('strong','',`${fmt([...grouped.values()].reduce((a,b)=>a+b,0))} m`));
           section.append(total);
         }
-        card.append(section);
+        // Formteile für Kabelkanäle separat je Raum und Typ erfassen.
+        if(!Array.isArray(area.channelParts))area.channelParts=[];
+        const parts=node('section','e-material');
+        parts.append(node('h4','','Kabelkanäle – Einzelteile'));
+        const partForm=node('form','e-material-form');
+        const channelTypeLabel=node('label','e-material-full','Zugehöriger Kabelkanal');
+        const channelType=node('select');
+        const types=[...new Set(area.channels.map(c=>c.type).concat(area.channelParts.map(c=>c.channelType)))];
+        if(!types.length){const o=node('option','','Bitte zuerst eine Kabelkanal-Teilstrecke hinzufügen');o.value='';channelType.append(o);}
+        else types.forEach(t=>{const o=node('option','',t);o.value=t;channelType.append(o);});
+        channelTypeLabel.append(channelType);
+        const partTypeLabel=node('label','e-material-full','Einzelteil');
+        const partType=node('select');
+        ['Innenecke','Außenecke','Flachwinkel','Endstück','Verbinder','T-Stück','Abzweigstück','Anderes Einzelteil …'].forEach(t=>{const o=node('option','',t);o.value=t;partType.append(o);});
+        partTypeLabel.append(partType);
+        const customPartLabel=node('label','e-material-full','Bezeichnung des Einzelteils');
+        const customPart=node('input');customPart.maxLength=100;customPart.placeholder='Eigenes Einzelteil';customPartLabel.append(customPart);customPartLabel.hidden=true;
+        partType.addEventListener('change',()=>{customPartLabel.hidden=partType.value!=='Anderes Einzelteil …';customPart.required=!customPartLabel.hidden;});
+        const qtyLabel=node('label','','Stückzahl');const qty=node('input');qty.type='number';qty.min='1';qty.step='1';qty.required=true;qty.value='1';qtyLabel.append(qty);
+        const partAdd=node('button','calculate e-material-full','+ Einzelteil hinzufügen');partAdd.type='submit';
+        partForm.append(channelTypeLabel,partTypeLabel,customPartLabel,qtyLabel,partAdd);
+        partForm.addEventListener('submit',event=>{
+          event.preventDefault();
+          const type=partType.value==='Anderes Einzelteil …'?customPart.value.trim():partType.value;
+          const n=Number(qty.value);
+          if(!channelType.value||!type||!Number.isSafeInteger(n)||n<=0){alert('Bitte Kabelkanal, Einzelteil und eine gültige Stückzahl angeben.');return;}
+          area.channelParts.push({channelType:channelType.value,type,quantity:n});save();render();
+        });
+        parts.append(partForm);
+        area.channelParts.forEach((p,i)=>{
+          const r=node('div','e-material-item');
+          r.append(node('span','',`${p.channelType} · ${p.type} · ${p.quantity} Stk.`),
+            btn('Entfernen',()=>{area.channelParts.splice(i,1);save();render();}));parts.append(r);
+        });
+        card.append(section,parts);
       };
       const renderMaterials = (area,card) => {
         if(!Array.isArray(area.materials))area.materials=[];
@@ -1109,15 +1143,57 @@
           }
           summary.append(extra);
         }
+        const partSums=new Map();
+        for(const area of areas)for(const p of (Array.isArray(area.channelParts)?area.channelParts:[])){
+          const n=Number(p.quantity);
+          if(!Number.isSafeInteger(n)||n<=0)continue;
+          const key=JSON.stringify([p.channelType,p.type]);
+          if(!partSums.has(key))partSums.set(key,{total:0,rooms:new Map()});
+          const g=partSums.get(key);g.total+=n;
+          g.rooms.set(area.name,(g.rooms.get(area.name)||0)+n);
+        }
+        if(partSums.size){
+          const extra=node('section','e-material-summary');
+          extra.append(node('h4','','Kabelkanäle – Einzelteile nach Typ'));
+          for(const [key,g] of partSums){
+            const [channelType,partType]=JSON.parse(key);
+            const r=node('div','e-summary-row');
+            r.append(node('span','',`${channelType} · ${partType}`),node('strong','',`${g.total} Stk.`));extra.append(r);
+            const details=node('div','e-breakdown');
+            for(const [room,n] of g.rooms){const line=node('div','e-breakdown-row');line.append(node('span','',room),node('strong','',`${n} Stk.`));details.append(line);}
+            extra.append(details);
+          }
+          summary.append(extra);
+        }
+        // Zusatzmaterial als vollständige Einkaufsliste: Artikel zusammenfassen,
+        // die zugehörigen Bereiche aber als nachvollziehbare Einzelpositionen erhalten.
         const materialSums=new Map();
         for(const area of areas)for(const m of (Array.isArray(area.materials)?area.materials:[])){
           const key=JSON.stringify([m.category,m.name]);
-          const qty=Number(m.qty)||0;
-          if(qty>0)materialSums.set(key,(materialSums.get(key)||0)+qty);
+          const qty=Number(m.qty);
+          if(!Number.isFinite(qty)||qty<=0)continue;
+          if(!materialSums.has(key))materialSums.set(key,{total:0,rooms:new Map()});
+          const group=materialSums.get(key);
+          group.total+=qty;
+          const room=String(area.name||'Ohne Bereich');
+          group.rooms.set(room,(group.rooms.get(room)||0)+qty);
         }
         if(materialSums.size){
-          const extra=node('section','e-material-summary');extra.append(node('h4','','Zusatzmaterial – gesamte Einkaufsliste'));
-          for(const [key,qty] of materialSums){const [category,name]=JSON.parse(key);const r=node('div','e-summary-row');r.append(node('span','',`${category} · ${name}`),node('strong','',`${qty} Stk.`));extra.append(r);}
+          const extra=node('section','e-material-summary');
+          extra.append(node('h4','','Zusatzmaterial – Einkaufsliste mit Raumaufteilung'));
+          for(const [key,group] of materialSums){
+            const [category,name]=JSON.parse(key);
+            const r=node('div','e-summary-row');
+            r.append(node('span','',`${category} · ${name}`),node('strong','',`${group.total} Stk.`));
+            extra.append(r);
+            const details=node('div','e-breakdown');
+            for(const [room,qty] of group.rooms){
+              const line=node('div','e-breakdown-row');
+              line.append(node('span','',room),node('strong','',`${qty} Stk.`));
+              details.append(line);
+            }
+            extra.append(details);
+          }
           summary.append(extra);
         }
         if(sums.size){const row=node('div','e-total');row.append(node('span','','Gesamt über alle Leitungstypen'),node('strong','',`${fmt(grand)} m`));summary.append(row);}
