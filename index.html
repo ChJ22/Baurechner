@@ -162,6 +162,8 @@
       .stone-result dl { grid-template-columns:minmax(0,1fr) auto; font-size:.84rem; }
     }
     @media (max-width:370px) { .joint-fields .fields { grid-template-columns:1fr; } .design-chip { display:none; } }
+
+    .e-material{margin-top:16px;border-top:1px solid #e1e9e2;padding-top:16px}.e-material h4{margin:0 0 6px;font-size:1rem}.e-material-form{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:10px;align-items:end}.e-material-form .e-material-full{grid-column:1/-1}.e-material-preview{display:flex;gap:13px;align-items:center;background:#f5f9f5;border:1px solid #dce8df;border-radius:12px;padding:12px;margin:10px 0}.e-material-preview svg{flex:none;width:90px;height:75px;background:white;border-radius:9px;border:1px solid #e3e8e3}.e-material-preview p{margin:0;color:#526358;font-size:.85rem;line-height:1.4}.e-material-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #edf1ec;font-size:.9rem}.e-material-item button{border:0;background:none;color:#a02c25;padding:7px}.e-material-summary{margin-top:14px;border-top:1px solid #e3ebe4;padding-top:12px}.e-material-summary h4{margin:0 0 8px}.e-material-summary .e-summary-row{padding:7px 0}
     .electro {max-width:980px;margin:auto}.electro h2{margin:0 0 8px}.e-card{background:#fff;border:1px solid #dce6dd;border-radius:17px;padding:20px;margin:18px 0;box-shadow:0 3px 16px #183e2610}.e-card h3{margin:0 0 15px}.e-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.electro label{display:block;font-size:.9rem;font-weight:700;margin:10px 0}.electro label input,.electro label select{display:block;width:100%;margin-top:7px;border:1px solid #cbd4cc;border-radius:10px;background:#fff;color:#192521;font-size:1rem;padding:12px;min-width:0}.electro button{cursor:pointer}.e-row{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:9px;align-items:end;margin:10px 0}.e-row label{margin:0}.e-row button,.e-action{border:1px solid #b9d1c0;background:#eff7f0;color:#245b42;border-radius:9px;padding:12px;font-weight:700}.e-row button{color:#a02c25}.e-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.e-head button{color:#a02c25;background:none;border:0;padding:8px}.e-total{background:#edf7ee;border-radius:12px;padding:15px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.e-total strong{color:#246249;font-size:1.4rem}.e-summary-row{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #e3ebe4}.e-summary-row strong{white-space:nowrap}.e-breakdown{margin:0 0 16px 0;padding:0 0 8px 14px;border-left:3px solid #c7dfcc}.e-breakdown-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:.9rem;color:#526358}.e-breakdown-row span{overflow-wrap:anywhere}.e-breakdown-row strong{white-space:nowrap;color:#245b42}.e-empty{color:#66776c;padding:14px 0}.e-note{font-size:.85rem;color:#66776c}.e-add{margin-top:12px}.e-add .calculate{margin:0}.electro [hidden]{display:none!important}@media(max-width:650px){.e-grid{grid-template-columns:1fr}.e-card{padding:15px}.e-row{grid-template-columns:minmax(0,1fr) 85px auto;gap:6px}.e-row button{padding:12px 9px}}
 .nav-reset-area{margin-top:24px;padding:18px;border:1px solid #ead7d7;border-radius:16px;background:#fffafa}.nav-reset-area p{margin:9px 0 0;font-size:.88rem}.nav-reset-button{font:inherit;font-weight:700;color:#8c2d2d;background:white;border:1px solid #c98d8d;border-radius:11px;padding:12px 16px;cursor:pointer;width:100%;text-align:center}.nav-reset-button:hover{background:#fff0f0}
     .nav-dashboard{padding:12px 0 30px}.nav-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0}.nav-tile{font:inherit;text-align:left;cursor:pointer;border:1px solid #d8e6da;background:#fff;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:9px;box-shadow:0 5px 18px #163d2510;color:#17392a}.nav-tile:hover,.nav-tile:focus-visible{border-color:#448e61;box-shadow:0 7px 22px #163d2520}.nav-symbol{font-size:2rem;color:#277047}.nav-tile strong{font-size:1.25rem}.nav-tile small{font-size:.9rem;color:#637369}.nav-open{color:#24764a;font-weight:700;margin-top:8px}.nav-overview{border:1px solid #d8e6da;border-radius:20px;padding:22px;background:#fff}.nav-overview h2{margin:0 0 8px}.nav-summary{border-top:1px solid #e4eee5;padding:14px 0}.nav-summary p{margin:6px 0 0;color:#52665a;font-size:.93rem}.nav-back{font:inherit;cursor:pointer;background:#eaf4ec;color:#1c6340;border:1px solid #bed9c5;border-radius:11px;padding:12px 15px;font-weight:700}.nav-module-title{margin-left:14px;font-weight:700;color:#2d5940}#module-navigation{margin:18px 0 22px}#module-navigation[hidden],#dashboard[hidden],.panel[hidden]{display:none!important}@media(max-width:650px){.nav-tiles{grid-template-columns:1fr}.nav-tile{padding:18px}}
@@ -332,8 +334,9 @@
         }
       }
       cableSummary.replaceChildren();
+      const extraCount = (Array.isArray(areas)?areas:[]).reduce((sum,a)=>sum+(Array.isArray(a.materials)?a.materials.reduce((n,m)=>n+(Number(m.qty)||0),0):0),0);
       const cableHeading = document.createElement('strong'); cableHeading.textContent = '⌁ Elektroleitungen'; cableSummary.append(cableHeading);
-      const cableDetail = document.createElement('p'); cableDetail.textContent = `${Array.isArray(areas)?areas.length:0} Bereiche` + (sums.size ? ` · ${count} Teilstrecken` : ''); cableSummary.append(cableDetail);
+      const cableDetail = document.createElement('p'); cableDetail.textContent = `${Array.isArray(areas)?areas.length:0} Bereiche` + (sums.size ? ` · ${count} Teilstrecken` : ''); cableSummary.append(cableDetail); if(extraCount){const m=document.createElement('p');m.textContent=`${extraCount} Stk. Zusatzmaterial erfasst`;cableSummary.append(m);}
       for (const [type,meters] of sums) { const line = document.createElement('p'); line.textContent = `${type}: ${meters.toLocaleString('de-DE',{maximumFractionDigits:2})} m`; cableSummary.append(line); }
     }
     function showTab(which) {
@@ -903,6 +906,63 @@
         select.addEventListener('change',sync);sync();wrap.append(select,custom);
         return {wrap,value:()=>select.value==='custom'?custom.value.trim():select.value};
       };
+      // Local schematic reference illustrations; no external images or network requests.
+      const materialCatalog = {
+        'Installationsdosen': [
+          ['Unterputzdose','Runde Dose für geeignete massive Wände; Montage nach Untergrund und System.','dose'],
+          ['Unterputzdose tief','Tiefere Gerätedose für zusätzlichen Anschlussraum.','dose'],
+          ['Hohlwanddose','Dose mit Haltekrallen für geeignete Hohlwandkonstruktionen.','hollow'],
+          ['Abzweigdose','Gehäuse zum geschützten Verbinden und Verteilen von Leitungen.','junction'],
+          ['Elektronikdose','Gerätedose mit zusätzlichem Raum für Elektronikkomponenten.','dose']
+        ],
+        'Befestigungsmaterial': [
+          ['Nagelschelle','Kabelschelle mit Nagel für geeignete Untergründe.','nail'],
+          ['Kabelclip','Kleine Kabelhalterung, je nach Bauart klebend oder schraubbar.','clip'],
+          ['Rohrschelle','Befestigung für ein Installationsrohr.','pipe'],
+          ['Kabelbinder','Bindeband zum Bündeln von Leitungen; nicht überall als dauerhafte Befestigung geeignet.','tie'],
+          ['Befestigungsdübel','Dübel für eine geeignete Schraubbefestigung.','anchor']
+        ],
+        'Verbindungselemente': [
+          ['Verbindungsklemme 2 Leiter','Klemme für zwei geeignete Leiter; Datenblatt beachten.','terminal'],
+          ['Verbindungsklemme 3 Leiter','Klemme für drei geeignete Leiter; Datenblatt beachten.','terminal'],
+          ['Verbindungsklemme 5 Leiter','Klemme für fünf geeignete Leiter; Datenblatt beachten.','terminal'],
+          ['Steckklemme','Verbindungsklemme für geeignete Leiterarten und Querschnitte.','terminal']
+        ]
+      };
+      const matSvg = kind => {
+        const shapes = {
+          dose:'<circle cx="60" cy="45" r="28" fill="#c9d8ee" stroke="#53769c" stroke-width="4"/><circle cx="60" cy="45" r="19" fill="#f3f6fa" stroke="#53769c" stroke-width="2"/><circle cx="60" cy="27" r="3" fill="#53769c"/><circle cx="60" cy="63" r="3" fill="#53769c"/>',
+          hollow:'<circle cx="60" cy="45" r="25" fill="#d7ebd4" stroke="#4f8c64" stroke-width="4"/><circle cx="60" cy="45" r="17" fill="white" stroke="#4f8c64"/><path d="M25 33h13m44 0h13M25 57h13m44 0h13" stroke="#596b60" stroke-width="6" stroke-linecap="round"/>',
+          junction:'<rect x="30" y="18" width="60" height="54" rx="8" fill="#d4dce8" stroke="#637991" stroke-width="3"/><rect x="40" y="27" width="40" height="36" rx="4" fill="white" stroke="#637991"/><circle cx="60" cy="45" r="5" fill="#637991"/>',
+          nail:'<path d="M20 61h80" stroke="#ddaa5e" stroke-width="9" stroke-linecap="round"/><path d="M44 61V36q16-20 32 0v25" fill="none" stroke="#647a90" stroke-width="9"/><path d="M60 20v35" stroke="#8b919b" stroke-width="5"/><path d="M53 20h14" stroke="#8b919b" stroke-width="5"/>',
+          clip:'<path d="M22 62h76" stroke="#e5b767" stroke-width="9" stroke-linecap="round"/><path d="M38 59V36q22-21 44 0v23" fill="none" stroke="#3c8a68" stroke-width="8"/><circle cx="60" cy="58" r="5" fill="#64748b"/>',
+          pipe:'<circle cx="60" cy="46" r="20" fill="#e7ebef" stroke="#6a7884" stroke-width="8"/><path d="M31 50v23m58-23v23" stroke="#497b64" stroke-width="8"/><path d="M27 74h66" stroke="#497b64" stroke-width="5"/>',
+          tie:'<path d="M25 57C25 12 96 13 96 53S46 82 45 53" fill="none" stroke="#414c55" stroke-width="6" stroke-linecap="round"/><rect x="38" y="45" width="15" height="15" rx="3" fill="#65727b"/>',
+          anchor:'<path d="M42 25v45l18 8 18-8V25z" fill="#e2bd71" stroke="#a98440" stroke-width="3"/><path d="M60 18v55" stroke="#8795a3" stroke-width="7"/><path d="M49 18h22" stroke="#8795a3" stroke-width="6"/>',
+          terminal:'<rect x="25" y="27" width="70" height="37" rx="8" fill="#d7e0e5" stroke="#637b88" stroke-width="3"/><rect x="35" y="18" width="15" height="24" rx="3" fill="#eaa54d"/><rect x="54" y="18" width="15" height="24" rx="3" fill="#eaa54d"/><rect x="73" y="18" width="15" height="24" rx="3" fill="#eaa54d"/><path d="M43 64v15m19-15v15m19-15v15" stroke="#507fba" stroke-width="4"/>'
+        };
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" role="img" aria-label="Schematische Beispielabbildung">'+(shapes[kind]||shapes.dose)+'</svg>';
+      };
+      const renderMaterials = (area,card) => {
+        if(!Array.isArray(area.materials))area.materials=[];
+        const section=node('section','e-material');section.append(node('h4','','Zusatzmaterial für diesen Bereich'));
+        section.append(node('p','e-note','Dosen, Befestigungen und Verbinder erfassen – mit schematischer Bildvorschau.'));
+        const form=node('form','e-material-form');
+        const catLabel=node('label','e-material-full','Kategorie');const cat=node('select');
+        Object.keys(materialCatalog).forEach(k=>{const opt=node('option','',k);opt.value=k;cat.append(opt);});catLabel.append(cat);
+        const itemLabel=node('label','','Artikel');const item=node('select');itemLabel.append(item);
+        const qtyLabel=node('label','','Stückzahl');const qty=node('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';qty.required=true;qtyLabel.append(qty);
+        const preview=node('div','e-material-preview e-material-full');const picture=node('div');const description=node('p');preview.append(picture,description);
+        const updatePreview=()=>{const info=(materialCatalog[cat.value]||[]).find(x=>x[0]===item.value);picture.innerHTML=matSvg(info?info[2]:'dose');description.textContent=info?info[1]:'';};
+        const updateItems=()=>{item.replaceChildren();materialCatalog[cat.value].forEach(x=>{const o=node('option','',x[0]);o.value=x[0];item.append(o);});updatePreview();};
+        cat.addEventListener('change',updateItems);item.addEventListener('change',updatePreview);updateItems();
+        const add= node('button','calculate e-material-full','+ Material hinzufügen');add.type='submit';
+        form.append(catLabel,itemLabel,qtyLabel,preview,add);
+        form.addEventListener('submit',e=>{e.preventDefault();const n=Number(qty.value);if(!Number.isSafeInteger(n)||n<1){alert('Bitte eine gültige Stückzahl eingeben.');return;}const existing=area.materials.find(x=>x.category===cat.value&&x.name===item.value);if(existing)existing.qty+=n;else area.materials.push({category:cat.value,name:item.value,qty:n});save();render();});
+        section.append(form);
+        area.materials.forEach((m,i)=>{const line=node('div','e-material-item');line.append(node('span','',m.name+' · '+m.qty+' Stk.'),btn('Entfernen',()=>{area.materials.splice(i,1);save();render();}));section.append(line);});
+        card.append(section);
+      };
       function render(){
         const host=el('e-areas');host.replaceChildren();
         if(!areas.length)host.append(node('p','e-empty','Noch keine Bereiche vorhanden. Lege oben deinen ersten Bereich an.'));
@@ -917,7 +977,7 @@
             row.append(nameLabel,lenLabel,btn('✕',()=>{area.parts.splice(index,1);save();render();}));rows.append(row);
           });card.append(rows);
           const add=node('form','e-add');const inputs=node('div','e-row');const nameLabel=node('label','','Neue Teilstrecke');const nameChoice=partSelector();nameLabel.append(nameChoice.wrap);const lenLabel=node('label','','Meter');const lenInput=node('input');lenInput.inputMode='decimal';lenInput.placeholder='z. B. 4,5';lenInput.required=true;lenLabel.append(lenInput);inputs.append(nameLabel,lenLabel);add.append(inputs);const addButton=node('button','calculate','+ Teilstrecke hinzufügen');addButton.type='submit';add.append(addButton);add.addEventListener('submit',event=>{event.preventDefault();const length=parse(lenInput.value);if(!Number.isFinite(length)||length<=0){alert('Bitte eine gültige Länge größer als 0 eingeben.');return;}const name=nameChoice.value();if(!name){alert('Bitte eine Bezeichnung für die Teilstrecke eingeben.');return;}area.parts.push({name,length});save();render();});card.append(add);
-          const total=parts.reduce((sum,p)=>sum+(Number(p.length)||0),0);const summary=node('div','e-total');summary.append(node('span','',`Bereichssumme · ${parts.length} Teilstrecken`),node('strong','',`${fmt(total)} m`));card.append(summary);host.append(card);
+          const total=parts.reduce((sum,p)=>sum+(Number(p.length)||0),0);const summary=node('div','e-total');summary.append(node('span','',`Bereichssumme · ${parts.length} Teilstrecken`),node('strong','',`${fmt(total)} m`));card.append(summary);renderMaterials(area,card);host.append(card);
           sums.set(area.type,(sums.get(area.type)||0)+total);grand+=total;
         }
         const summary=el('e-summary');summary.replaceChildren();if(!sums.size)summary.append(node('p','e-empty','Noch keine Leitungen erfasst.'));
@@ -943,6 +1003,17 @@
             detail.append(node('span','',`${areaName} · ${purpose}`),node('strong','',`${fmt(meters)} m`));details.append(detail);
           }
           summary.append(details);
+        }
+        const materialSums=new Map();
+        for(const area of areas)for(const m of (Array.isArray(area.materials)?area.materials:[])){
+          const key=JSON.stringify([m.category,m.name]);
+          const qty=Number(m.qty)||0;
+          if(qty>0)materialSums.set(key,(materialSums.get(key)||0)+qty);
+        }
+        if(materialSums.size){
+          const extra=node('section','e-material-summary');extra.append(node('h4','','Zusatzmaterial – gesamte Einkaufsliste'));
+          for(const [key,qty] of materialSums){const [category,name]=JSON.parse(key);const r=node('div','e-summary-row');r.append(node('span','',`${category} · ${name}`),node('strong','',`${qty} Stk.`));extra.append(r);}
+          summary.append(extra);
         }
         if(sums.size){const row=node('div','e-total');row.append(node('span','','Gesamt über alle Leitungstypen'),node('strong','',`${fmt(grand)} m`));summary.append(row);}
       }
