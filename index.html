@@ -246,7 +246,7 @@
                 </select></label>
                 <p class="muted" id="joint-hint">Wähle eine Bauweise oder gib eigene Fugenmaße ein.</p>
                 <div class="fields">
-                  <label class="field" for="bed-joint"><span>Lagerfuge (waagerecht)</span><div class="input-wrap"><input id="bed-joint" inputmode="decimal" autocomplete="off" value="0" aria-describedby="error"><span class="suffix" aria-hidden="true">mm</span></div></label>
+                  <label class="field" for="bed-joint"><span>Lagerfuge (waagerecht)</span><div class="input-wrap"><input id="bed-joint" inputmode="decimal" autocomplete="off" value="10" aria-describedby="error"><span class="suffix" aria-hidden="true">mm</span></div></label>
                   <label class="field" for="head-joint"><span>Stoßfuge (senkrecht)</span><div class="input-wrap"><input id="head-joint" inputmode="decimal" autocomplete="off" value="0" aria-describedby="error"><span class="suffix" aria-hidden="true">mm</span></div></label>
                 </div>
                 <p class="muted">Die Werte sind Vorschläge. Beide Fugenmaße kannst du jederzeit selbst ändern. Eine unvermörtelte Stoßfuge kann trotzdem einen Abstand haben.</p>
@@ -268,7 +268,7 @@
             <div class="stone-fields">
               <h3>Verschnittzuschlag</h3>
               <p class="muted">Ein Prozentsatz für das Mauervolumen und, bei der Steinberechnung, für die Steinzahl. Die Wandmaße bleiben unverändert.</p>
-              <label class="field" for="waste-percent"><span>Verschnitt</span><div class="input-wrap"><input id="waste-percent" inputmode="decimal" autocomplete="off" value="0" aria-describedby="error"><span class="suffix" aria-hidden="true">%</span></div></label>
+              <label class="field" for="waste-percent"><span>Verschnitt</span><div class="input-wrap"><input id="waste-percent" inputmode="decimal" autocomplete="off" value="0" aria-describedby="error"><span class="suffix" aria-hidden="true">%</span></div></label><input type="range" id="wall-waste-slider" min="0" max="25" step="1" value="10" aria-label="Verschnitt Mauerwerk in Prozent" style="width:100%;accent-color:#247caa;margin-top:10px">
             </div>
             <p class="error" id="error" role="alert"></p>
             <button class="calculate" id="calculate-button" type="submit">Volumen berechnen</button>
@@ -310,8 +310,8 @@
           <label id="e-area-custom-wrap" hidden>Eigenen Bereich eingeben<input id="e-area" placeholder="z. B. Werkstatt – Beleuchtung" maxlength="100"></label><label id="e-custom-wrap" hidden>Eigener Leitungstyp<input id="e-custom" maxlength="80" placeholder="z. B. NYM-J 7×1,5 mm²"></label>
           <button class="calculate" type="submit">+ Bereich anlegen</button><p class="error" id="e-error" role="alert"></p>
         </form>
-        <div id="e-areas"></div>
-        <div class="e-card"><h3>Materialübersicht: Leitungen, Kabelkanäle und Zusatzmaterial</h3><div id="e-summary" aria-live="polite"></div></div>
+        <div class="e-card"><h3>Verschnittzuschlag</h3><p class="muted">Für Leitungen und Kabelführungen getrennt einstellbar. Ausgangswert jeweils 10 %. Der Zuschlag wird in der Materialübersicht berücksichtigt.</p><label for="cable-waste-slider">Elektroleitungen: <strong id="cable-waste-value">10 %</strong></label><input type="range" id="cable-waste-slider" min="0" max="25" step="1" value="10" style="width:100%;accent-color:#247caa"><label for="channel-waste-slider">Kabelführung: <strong id="channel-waste-value">10 %</strong></label><input type="range" id="channel-waste-slider" min="0" max="25" step="1" value="10" style="width:100%;accent-color:#247caa"></div><div id="e-areas"></div>
+        <div class="e-card"><h3>Materialübersicht: Leitungen, Kabelführung und Zusatzmaterial</h3><div id="e-summary" aria-live="polite"></div></div>
         <p class="muted" style="font-size:.85rem">Nur Mengenermittlung. Keine Prüfung von Strombelastbarkeit, Absicherung oder zulässiger Verlegeart. Elektroinstallationen fachgerecht planen und ausführen lassen.</p>
       </div>
     </section>
@@ -421,6 +421,7 @@
         }
         return result;
       };
+      let shoppingWaste={cable:10,channel:10};try{const v=JSON.parse(localStorage.getItem('baurechner-waste-settings-v1')||'{}');for(const k of ['cable','channel'])if(Number.isFinite(v[k]))shoppingWaste[k]=v[k];}catch(e){}
       const safeAreas=Array.isArray(areas)?areas:[];
       if(sums.size){
         const section=sectionShopping('Elektroleitungen');
@@ -434,16 +435,16 @@
               if(Number.isFinite(n)&&n>0){const room=String(area.name||'Ohne Bereich');rooms.set(room,(rooms.get(room)||0)+n);}
             }
           }
-          shoppingRow(section,type,`${fmtShopping(meters)} m`,new Map([...rooms].map(([room,n])=>[room,`${fmtShopping(n)} m`])));
+          shoppingRow(section,type,`${fmtShopping(meters*(1+shoppingWaste.cable/100))} m inkl. ${shoppingWaste.cable} %`,new Map([...rooms].map(([room,n])=>[room,`${fmtShopping(n)} m`])));
         }
       }
       const channelEntries=safeAreas.flatMap(area=>(Array.isArray(area.channels)?area.channels:[]).map(c=>({...c,room:String(area.name||'Ohne Bereich')})));
       const channels=grouped(channelEntries,c=>String(c.type||''),c=>Number(c.length),c=>c.room);
-      if(channels.size){const section=sectionShopping('Kabelkanäle');for(const [type,g] of channels)
-        shoppingRow(section,type,`${fmtShopping(g.total)} m`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} m`])));}
+      if(channels.size){const section=sectionShopping('Kabelführung');for(const [type,g] of channels)
+        shoppingRow(section,type,`${fmtShopping(g.total*(1+shoppingWaste.channel/100))} m inkl. ${shoppingWaste.channel} %`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} m`])));}
       const partEntries=safeAreas.flatMap(area=>(Array.isArray(area.channelParts)?area.channelParts:[]).map(p=>({...p,room:String(area.name||'Ohne Bereich')})));
       const channelParts=grouped(partEntries,p=>JSON.stringify([p.channelType||'Ohne Kanaltyp',p.type||'Einzelteil']),p=>Number(p.quantity),p=>p.room);
-      if(channelParts.size){const section=sectionShopping('Kabelkanal-Einzelteile');for(const [key,g] of channelParts){
+      if(channelParts.size){const section=sectionShopping('Kabelführung – Einzelteile');for(const [key,g] of channelParts){
         const [channelType,partType]=JSON.parse(key);
         shoppingRow(section,`${channelType} · ${partType}`,`${fmtShopping(g.total)} Stk.`,new Map([...g.rooms].map(([room,n])=>[room,`${fmtShopping(n)} Stk.`])));
       }}
@@ -1057,22 +1058,30 @@
       };
 
       // Kabelkanäle: getrennt von Elektroleitungen nach Bereich, Kanaltyp und Teilstrecken.
+      const wasteKey='baurechner-waste-settings-v1';
+      let wasteSettings={cable:10,channel:10};
+      try { const saved=JSON.parse(localStorage.getItem(wasteKey)||'{}'); for(const k of ['cable','channel']) if(Number.isFinite(saved[k])&&saved[k]>=0&&saved[k]<=25)wasteSettings[k]=saved[k]; } catch(e){}
+      const wasteFactor=k=>1+wasteSettings[k]/100;
+      for(const [k,id] of [['cable','cable-waste-slider'],['channel','channel-waste-slider']]){
+        const slider=el(id),output=el(k+'-waste-value');slider.value=wasteSettings[k];output.textContent=wasteSettings[k]+' %';
+        slider.addEventListener('input',()=>{wasteSettings[k]=Number(slider.value);output.textContent=slider.value+' %';localStorage.setItem(wasteKey,JSON.stringify(wasteSettings));render();if(typeof renderNavigationSummary==='function')renderNavigationSummary();});
+      }
       const channelPresets = ['Mini-Kabelkanal 10×10 mm','Mini-Kabelkanal 15×15 mm',
         'Kabelkanal 20×10 mm','Kabelkanal 20×20 mm','Kabelkanal 30×15 mm',
-        'Kabelkanal 40×25 mm','Kabelkanal 60×40 mm','Brüstungskanal','Eigener Kabelkanal …'];
+        'Kabelkanal 40×25 mm','Kabelkanal 60×40 mm','Brüstungskanal','Installationsrohr starr M16','Installationsrohr starr M20','Installationsrohr starr M25','Installationsrohr starr M32','Flexrohr / Wellrohr M16','Flexrohr / Wellrohr M20','Flexrohr / Wellrohr M25','Flexrohr / Wellrohr M32','Eigene Kabelführung …'];
       const renderChannels = (area,card) => {
         if(!Array.isArray(area.channels))area.channels=[];
         const section=node('section','e-material');
-        section.append(node('h4','','Kabelkanäle – Teilstrecken'));
-        section.append(node('p','e-note','Pro Bereich mehrere Kabelkanaltypen und Teilstrecken erfassen. Die Längen werden nach Kanaltyp zusammengezählt.'));
+        section.append(node('h4','','Kabelführung – Teilstrecken'));
+        section.append(node('p','e-note','Pro Bereich mehrere Art der Kabelführungen und Teilstrecken erfassen. Die Längen werden nach Kanaltyp zusammengezählt.'));
         const form=node('form','e-material-form');
-        const typeLabel=node('label','e-material-full','Kabelkanaltyp');
+        const typeLabel=node('label','e-material-full','Art der Kabelführung');
         const select=node('select');
         channelPresets.forEach(t=>{const o=node('option','',t);o.value=t;select.append(o);});
         typeLabel.append(select);
-        const customLabel=node('label','e-material-full','Eigene Kanalbezeichnung');
+        const customLabel=node('label','e-material-full','Eigene Bezeichnung');
         const custom=node('input');custom.placeholder='z. B. Kabelkanal 80×40 mm';custom.maxLength=100;customLabel.append(custom);customLabel.hidden=true;
-        select.addEventListener('change',()=>{customLabel.hidden=select.value!=='Eigener Kabelkanal …';custom.required=!customLabel.hidden;});
+        select.addEventListener('change',()=>{customLabel.hidden=select.value!=='Eigene Kabelführung …';custom.required=!customLabel.hidden;});
         const partLabel=node('label','','Teilstrecke / Verwendung');
         const part=node('input');part.placeholder='z. B. Wand bis Tür';part.maxLength=100;partLabel.append(part);
         const lenLabel=node('label','','Länge (m)');
@@ -1082,7 +1091,7 @@
         form.addEventListener('submit',event=>{
           event.preventDefault();
           const n=parse(length.value);
-          const type=select.value==='Eigener Kabelkanal …'?custom.value.trim():select.value;
+          const type=select.value==='Eigene Kabelführung …'?custom.value.trim():select.value;
           if(!type||!Number.isFinite(n)||n<=0){alert('Bitte Kanaltyp und gültige Länge größer 0 eingeben.');return;}
           area.channels.push({id:Date.now()+'-'+Math.random(),type,name:part.value.trim()||'Ohne Bezeichnung',length:n});
           save();render();
@@ -1100,14 +1109,14 @@
         });
         if(grouped.size){
           const total=node('div','e-total');
-          total.append(node('span','','Kabelkanäle in diesem Bereich'),
+          total.append(node('span','','Kabelführungen in diesem Bereich'),
             node('strong','',`${fmt([...grouped.values()].reduce((a,b)=>a+b,0))} m`));
           section.append(total);
         }
         // Formteile für Kabelkanäle separat je Raum und Typ erfassen.
         if(!Array.isArray(area.channelParts))area.channelParts=[];
         const parts=node('section','e-material');
-        parts.append(node('h4','','Kabelkanäle – Einzelteile'));
+        parts.append(node('h4','','Kabelführung – Einzelteile'));
         const partForm=node('form','e-material-form');
         const channelTypeLabel=node('label','e-material-full','Zugehöriger Kabelkanal');
         const channelType=node('select');
@@ -1204,7 +1213,7 @@
         const summary=el('e-summary');summary.replaceChildren();if(!sums.size)summary.append(node('p','e-empty','Noch keine Leitungen erfasst.'));
         for(const [type,length] of sums){
           if(length<=0)continue;
-          const row=node('div','e-summary-row');row.append(node('span','',type),node('strong','',`${fmt(length)} m`));summary.append(row);
+          const row=node('div','e-summary-row');row.append(node('span','',type),node('strong','',`${fmt(length*wasteFactor('cable'))} m (inkl. ${wasteSettings.cable} %; netto ${fmt(length)} m)`));summary.append(row);
           // Pro Leitungstyp nach Bereich und Verwendungszweck gruppieren.
           const breakdown=new Map();
           for(const area of areas){
@@ -1238,10 +1247,10 @@
         }
         if(channelSums.size){
           const extra=node('section','e-material-summary');
-          extra.append(node('h4','','Kabelkanäle – Einkaufsliste nach Typ'));
+          extra.append(node('h4','','Kabelführung – Einkaufsliste nach Typ'));
           for(const [type,group] of channelSums){
             const r=node('div','e-summary-row');
-            r.append(node('span','',type),node('strong','',`${fmt(group.total)} m`));extra.append(r);
+            r.append(node('span','',type),node('strong','',`${fmt(group.total*wasteFactor('channel'))} m (inkl. ${wasteSettings.channel} %; netto ${fmt(group.total)} m)`));extra.append(r);
             const details=node('div','e-breakdown');
             for(const [key,n] of group.details){
               const [room,purpose]=JSON.parse(key);
@@ -1264,7 +1273,7 @@
         }
         if(partSums.size){
           const extra=node('section','e-material-summary');
-          extra.append(node('h4','','Kabelkanäle – Einzelteile nach Typ'));
+          extra.append(node('h4','','Kabelführung – Einzelteile nach Typ'));
           for(const [key,g] of partSums){
             const [channelType,partType]=JSON.parse(key);
             const r=node('div','e-summary-row');
@@ -1306,9 +1315,17 @@
           }
           summary.append(extra);
         }
-        if(sums.size){const row=node('div','e-total');row.append(node('span','','Gesamt über alle Leitungstypen'),node('strong','',`${fmt(grand)} m`));summary.append(row);}
+        if(sums.size){const row=node('div','e-total');row.append(node('span','','Gesamt über alle Leitungstypen'),node('strong','',`${fmt(grand*wasteFactor('cable'))} m (inkl. ${wasteSettings.cable} %)`));summary.append(row);}
       }
       render();
+    })();
+    (function(){
+      const input=document.getElementById('waste-percent'),slider=document.getElementById('wall-waste-slider');
+      if(!input||!slider)return;
+      if(!input.value.trim())input.value='10';
+      const sync=()=>{const n=Number(String(input.value).replace(',','.'));if(Number.isFinite(n))slider.value=Math.min(25,Math.max(0,n));};
+      slider.addEventListener('input',()=>{input.value=slider.value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));});
+      input.addEventListener('input',sync);sync();
     })();
   </script>
 </body>
