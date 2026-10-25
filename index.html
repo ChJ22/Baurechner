@@ -1336,8 +1336,11 @@
 <div class="e-card"><h3>Öffnungen (Fenster / Türen)</h3><div id="eps-openings"></div><button type="button" id="eps-add-opening">+ Öffnung hinzufügen</button></div>
 <div class="e-card"><h3>Dämmplatten und Verschnitt</h3><div class="eps-fields" id="eps-board-fields"></div></div>
 <div class="e-card"><h3>Styroporkleber – Punkt-Wulst-Verfahren</h3>
+<details class="eps-glue-info"><summary>ⓘ Anleitung zum Punkt-Wulst-Verfahren (Bild und Hinweise)</summary>
+<div class="eps-glue-info-content">
 <img src="punkt-wulst-verfahren.png" alt="EPS-Dämmplatte mit umlaufendem Klebewulst und drei Klebepunkten" style="display:block;width:100%;max-width:650px;border-radius:10px;margin:10px 0" loading="lazy">
 <p class="muted">Der voreingestellte Verbrauch von <strong>5 kg/m²</strong> ist ein unverbindlicher Richtwert für das Punkt-Wulst-Verfahren, keine Herstellerangabe. Je nach Kleber, Unebenheiten, Wulstauftrag und Plattenzuschnitten kann der Bedarf abweichen. Die Klebekontaktfläche nach dem Andrücken richtet sich nach dem zugelassenen WDVS-System (häufig mindestens 40 %).</p>
+</div></details>
 <div class="eps-fields" id="eps-glue-rate-field"></div>
 <div class="eps-fields"><label>Berechnungsart<select id="eps-glue-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (kg/m²)</option><option value="estimate">Erweiterte Berechnung – Plattengröße und Zuschnitte</option></select></label><label id="eps-cut-wrap">Anteil zugeschnittener Platten (%)<input id="eps-cut-share" type="number" min="0" max="100" step="1" value="0"></label></div>
 <p id="eps-glue-mode-help" class="muted"></p><p id="eps-cut-help" class="muted">Beispiel: Bei 50 m² Dämmfläche und 10 m² zugeschnittenen Platten gibst du 20 % ein.</p><p id="eps-glue-explanation" class="muted" aria-live="polite"></p></div>
@@ -1346,7 +1349,7 @@
 <div class="e-card"><h3>Materialbedarf</h3><div id="eps-results" aria-live="polite"></div><button type="button" id="eps-copy">Materialliste kopieren</button></div>
 </div></section>
 <style>
-#eps-panel .e-card{margin:14px 0;padding:16px} .eps-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}.eps-fields label,.eps-line label{display:flex;flex-direction:column;gap:5px;font-size:.88rem}.eps-fields input,.eps-line input{width:100%;padding:9px;border:1px solid #aab8c3;border-radius:7px;background:var(--card,#fff);color:#172b3b}.eps-line{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;border-bottom:1px solid #d4dce3;padding:12px 0}.eps-line button{align-self:end}.eps-table{width:100%;border-collapse:collapse}.eps-table td,.eps-table th{padding:8px 5px;border-bottom:1px solid #d5dce2;text-align:left}.eps-table td:last-child{text-align:right}#eps-results{overflow-x:auto}
+#eps-panel .e-card{margin:14px 0;padding:16px} #eps-panel .eps-glue-info{margin:12px 0;border:1px solid #cbd5df;border-radius:9px;padding:10px 12px} #eps-panel .eps-glue-info summary{cursor:pointer;font-weight:600;line-height:1.5} #eps-panel .eps-glue-info-content{padding-top:8px} .eps-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}.eps-fields label,.eps-line label{display:flex;flex-direction:column;gap:5px;font-size:.88rem}.eps-fields input,.eps-line input{width:100%;padding:9px;border:1px solid #aab8c3;border-radius:7px;background:var(--card,#fff);color:#172b3b}.eps-line{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;border-bottom:1px solid #d4dce3;padding:12px 0}.eps-line button{align-self:end}.eps-table{width:100%;border-collapse:collapse}.eps-table td,.eps-table th{padding:8px 5px;border-bottom:1px solid #d5dce2;text-align:left}.eps-table td:last-child{text-align:right}#eps-results{overflow-x:auto}
 </style>
 <script>
 (()=>{
