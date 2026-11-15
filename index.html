@@ -1362,11 +1362,26 @@ let state;try{state=JSON.parse(localStorage.getItem(key)||'null')}catch(e){};if(
 const $=id=>document.getElementById(id),num=v=>Math.max(0,Number(String(v).replace(',','.'))||0),v=id=>num(state.values[id]??specs.find(x=>x[0]===id)?.[2]??0),ceil=(a,b)=>b>0?Math.ceil(a/b):0,fmt=n=>Number(n).toLocaleString('de-DE',{maximumFractionDigits:2});
 function save(){localStorage.setItem(key,JSON.stringify(state))}
 function field(container,id,label,def){let el=document.createElement('label');el.textContent=label;let inp=document.createElement('input');inp.type='number';inp.min='0';inp.step='any';inp.value=state.values[id]??def;inp.addEventListener('input',()=>{state.values[id]=num(inp.value);save();calculate()});el.append(inp);container.append(el)}
-state.glueMode=state.glueMode||'standard';state.cutShare=state.cutShare??0;
+state.glueMode=state.glueMode==='estimate'?'estimate':'standard';state.cutShare=state.cutShare??0;
 $('eps-glue-mode').value=state.glueMode;$('eps-cut-share').value=state.cutShare;
 $('eps-glue-mode').addEventListener('change',e=>{state.glueMode=e.target.value;save();calculate()});
 $('eps-cut-share').addEventListener('input',e=>{state.cutShare=Math.min(100,num(e.target.value));save();calculate()});
 for(let [id,label,def] of specs){field($(['boardL','boardW','thickness','waste'].includes(id)?'eps-board-fields':['cornerLength','cornerBar','baseLength','baseBar','windowLength','windowBar'].includes(id)?'eps-accessory-fields':id==='glueRate'?'eps-glue-rate-field':'eps-material-fields'),id,label,def)}
+// Standard consumption is deliberately fixed; the editable rate is only used in estimate mode.
+const STANDARD_GLUE_RATE=5;
+const glueRateInput=$('eps-glue-rate-field').querySelector('input');
+const glueRateLabel=$('eps-glue-rate-field').querySelector('label');
+const glueRateNote=document.createElement('small');
+glueRateNote.className='muted';
+glueRateLabel.append(glueRateNote);
+function syncGlueRateControl(){
+  const advanced=state.glueMode==='estimate';
+  glueRateInput.disabled=!advanced;
+  if(document.activeElement!==glueRateInput || !advanced)glueRateInput.value=advanced?v('glueRate'):STANDARD_GLUE_RATE;
+  glueRateLabel.firstChild.textContent=advanced?'Individueller Kleberverbrauch (kg/m²)':'Klebemörtel – fester Standardwert (kg/m²)';
+  glueRateNote.textContent=advanced?'Individueller Ausgangswert für die Schätzung mit Plattengröße und Zuschnitten.':'Fest auf 5 kg/m² eingestellt. Für eigene Werte die erweiterte Berechnung wählen.';
+}
+syncGlueRateControl();
 function renderLines(type){let target=$(type==='walls'?'eps-walls':'eps-openings');target.replaceChildren();state[type].forEach((item,i)=>{let row=document.createElement('div');row.className='eps-line';let keys=type==='walls'?[['name','Bezeichnung'],['length','Länge (m)'],['height1','Höhe links (m)'],['height2','Höhe rechts (m)']]:[['name','Bezeichnung'],['width','Breite (m)'],['height','Höhe (m)'],['count','Anzahl']];keys.forEach(([k,label])=>{let l=document.createElement('label');l.textContent=label;let input=document.createElement('input');input.type=k==='name'?'text':'number';if(k!=='name'){input.min='0';input.step='any'}input.value=item[k]??'';input.addEventListener('input',()=>{item[k]=k==='name'?input.value:num(input.value);save();calculate()});l.append(input);row.append(l)});let b=document.createElement('button');b.textContent='Entfernen';b.type='button';b.addEventListener('click',()=>{state[type].splice(i,1);save();renderLines(type);calculate()});row.append(b);target.append(row)})}
 $('eps-import-walls').addEventListener('click',()=>{
   let source;
@@ -1389,17 +1404,18 @@ let clipboard='';function calculate(){let gross=state.walls.reduce((s,w)=>s+num(
 let L=v('boardL')/100,W=v('boardW')/100,perimeterRatio=(L>0&&W>0)?((2/L+2/W)/6):1;
 let cutRatio=1+(Math.SQRT2-1)*Math.min(100,num(state.cutShare))/100;
 let factor=Math.max(.5,Math.min(2.5,.5+.5*perimeterRatio*cutRatio));
-let estimated=state.glueMode==='estimate';let glueRate=v('glueRate')*(estimated?factor:1);
+let estimated=state.glueMode==='estimate';let glueRate=estimated?v('glueRate')*factor:STANDARD_GLUE_RATE;
+syncGlueRateControl();
 $('eps-cut-wrap').hidden=!estimated;
 $('eps-cut-help').hidden=!estimated;
-$('eps-glue-mode-help').textContent=estimated?'Bei kleineren oder zugeschnittenen Styroporplatten entstehen mehr Plattenränder. Da jede Platte rundherum einen Klebewulst erhält, kann dadurch der Kleberverbrauch steigen. Der Rechner schätzt den zusätzlichen Bedarf anhand der Plattengröße und des Anteils zugeschnittener Platten.':'Der Kleberbedarf wird mit dem eingestellten Verbrauch pro Quadratmeter berechnet, unabhängig von Plattengröße und Zuschnitten.';
-$('eps-glue-explanation').textContent=estimated?`Geschätzter Verbrauch: ${fmt(glueRate)} kg/m². Dies ist eine vereinfachte Schätzung. Der tatsächliche Kleberverbrauch kann abweichen; Herstellerangaben beachten und Bedarf durch Probeauftrag prüfen.`:`Berechnung mit dem frei einstellbaren Richtwert ${fmt(glueRate)} kg/m², unabhängig vom Plattenformat.`;
+$('eps-glue-mode-help').textContent=estimated?'Bei kleineren oder zugeschnittenen Styroporplatten entstehen mehr Plattenränder. Da jede Platte rundherum einen Klebewulst erhält, kann dadurch der Kleberverbrauch steigen. Der Rechner schätzt den zusätzlichen Bedarf anhand der Plattengröße und des Anteils zugeschnittener Platten.':'Der Kleberbedarf wird mit dem festen Standardwert von 5 kg/m² berechnet, unabhängig von Plattengröße und Zuschnitten.';
+$('eps-glue-explanation').textContent=estimated?`Geschätzter Verbrauch: ${fmt(glueRate)} kg/m². Dies ist eine vereinfachte Schätzung. Der tatsächliche Kleberverbrauch kann abweichen; Herstellerangaben beachten und Bedarf durch Probeauftrag prüfen.`:`Berechnung mit dem festen Richtwert ${fmt(STANDARD_GLUE_RATE)} kg/m², unabhängig vom Plattenformat.`;
 let items=[['EPS-Platten',boards,'Stück',null,''],['Klebemörtel',net*glueRate,'kg',ceil(net*glueRate,v('mortarBag')),'Säcke'],['Armierungsmörtel',net*v('armRate'),'kg',ceil(net*v('armRate'),v('mortarBag')),'Säcke'],['Armierungsgewebe',net*(1+v('meshOverlap')/100),'m²',ceil(net*(1+v('meshOverlap')/100),v('meshRoll')),'Rollen'],['Dämmstoffdübel',Math.ceil(net*v('dowelRate')),'Stück',null,''],['Putzgrund',net*v('primerRate'),'kg',ceil(net*v('primerRate'),v('primerBucket')),'Gebinde'],['Oberputz',net*v('plasterRate'),'kg',ceil(net*v('plasterRate'),v('plasterBucket')),'Gebinde'],['Eckschutzschienen',v('cornerLength'),'m',ceil(v('cornerLength'),v('cornerBar')),'Stück'],['Sockelprofile',v('baseLength'),'m',ceil(v('baseLength'),v('baseBar')),'Stück'],['Fensteranschlussprofile',v('windowLength'),'m',ceil(v('windowLength'),v('windowBar')),'Stück']];
 let rows=items.map(x=>`<tr><td>${x[0]}</td><td>${fmt(x[1])} ${x[2]}</td><td>${x[3]===null?'—':x[3]+' '+x[4]}</td></tr>`).join('');$('eps-results').innerHTML=`<p><strong>Bruttofläche:</strong> ${fmt(gross)} m² · <strong>Öffnungen:</strong> ${fmt(open)} m² · <strong>Nettofläche:</strong> ${fmt(net)} m²</p><p><strong>Dämmstärke:</strong> ${fmt(v('thickness'))} cm</p><table class="eps-table"><thead><tr><th>Material</th><th>Bedarf</th><th>Einkauf</th></tr></thead><tbody>${rows}</tbody></table><p class="muted">Keine automatische Prüfung von WDVS-Systemzulassung, Dübelbemessung oder Brandschutz.</p>`;
 clipboard=`Außendämmung / WDVS\nNettofläche: ${fmt(net)} m²\n`+items.map(x=>`${x[0]}: ${fmt(x[1])} ${x[2]} / ${x[3]===null?'':`Einkauf: ${x[3]} ${x[4]}`}`).join('\n');$('nav-eps-summary').textContent=`▤ Außendämmung: ${fmt(net)} m² · ${boards} EPS-Platten`;}
 $('eps-copy').onclick=()=>{if(navigator.clipboard)navigator.clipboard.writeText(clipboard).then(()=>{$('eps-copy').textContent='Kopiert ✓'}).catch(()=>{prompt('Materialliste kopieren:',clipboard)});else prompt('Materialliste kopieren:',clipboard)};
 $('eps-open').addEventListener('click',()=>{ $('dashboard').hidden=true;$('module-navigation').hidden=false;$('nav-module-title').textContent='Außendämmung / WDVS';$('wall').hidden=true;$('cable').hidden=true;$('eps-panel').hidden=false;document.querySelector('.tabs').hidden=true;window.scrollTo(0,0)});
-document.querySelectorAll('[data-open-module]').forEach(b=>b.addEventListener('click',()=>{$('eps-panel').hidden=true}));$('nav-home').addEventListener('click',()=>{$('eps-panel').hidden=true});$('reset-all-analysis').addEventListener('click',()=>{localStorage.removeItem(key);state={walls:[],openings:[],values:{},glueMode:'standard',cutShare:0};$('eps-glue-mode').value='standard';$('eps-cut-share').value=0;renderLines('walls');renderLines('openings');calculate()});renderLines('walls');renderLines('openings');calculate();
+document.querySelectorAll('[data-open-module]').forEach(b=>b.addEventListener('click',()=>{$('eps-panel').hidden=true}));$('nav-home').addEventListener('click',()=>{$('eps-panel').hidden=true});$('reset-all-analysis').addEventListener('click',()=>{localStorage.removeItem(key);state={walls:[],openings:[],values:{},glueMode:'standard',cutShare:0};$('eps-glue-mode').value='standard';$('eps-cut-share').value=0;glueRateInput.value=STANDARD_GLUE_RATE;renderLines('walls');renderLines('openings');calculate()});renderLines('walls');renderLines('openings');calculate();
 })();
 </script>
 </body>
