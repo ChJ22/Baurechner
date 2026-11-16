@@ -1345,9 +1345,9 @@
 <div class="eps-fields"><label>Berechnungsart<select id="eps-glue-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (kg/m²)</option><option value="estimate">Erweiterte Berechnung – Plattengröße und Zuschnitte</option></select></label><label id="eps-cut-wrap">Anteil zugeschnittener Platten (%)<input id="eps-cut-share" type="number" min="0" max="100" step="1" value="0"></label></div>
 <p id="eps-glue-mode-help" class="muted"></p><p id="eps-cut-help" class="muted">Beispiel: Bei 50 m² Dämmfläche und 10 m² zugeschnittenen Platten gibst du 20 % ein.</p><p id="eps-glue-explanation" class="muted" aria-live="polite"></p></div>
 <div class="e-card"><h3>Armierungsmörtel und Mörtelsäcke</h3>
-<p class="muted">Verbrauch und Sackgröße werden gemeinsam berechnet. Der Standardverbrauch beträgt fest 5 kg/m². Die Sackgröße kannst du in beiden Berechnungsarten passend zu deinem Produkt auswählen.</p>
-<div class="eps-fields"><label>Berechnungsart<select id="eps-arm-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (5 kg/m² · Sackgröße wählbar)</option><option value="estimate">Erweiterte Berechnung – individuelle Werte</option></select></label></div>
-<div class="eps-fields" id="eps-arm-rate-field"></div>
+<p class="muted">Verbrauch und Sackgröße werden gemeinsam berechnet. Standard: 6 kg/m². Erweitert: Verbrauch aus Schichtdicke und produktspezifischem Faktor. Grundlage ist immer die bereits ermittelte Nettofläche der Wände (Öffnungen sind schon abgezogen). Die Sackgröße ist in beiden Modi frei wählbar.</p>
+<div class="eps-fields"><label>Berechnungsart<select id="eps-arm-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (6 kg/m² · Sackgröße wählbar)</option><option value="estimate">Erweiterte Berechnung – Schichtdicke</option></select></label></div>
+<div class="eps-fields" id="eps-arm-thickness-fields"><label>Armierungsschichtdicke (mm)<input id="eps-arm-layer-mm" type="number" min="0.1" step="0.5" value="4"></label><label>Produktverbrauch (kg/m² je mm)<input id="eps-arm-per-mm" type="number" min="0.01" step="0.1" value="1.4"></label></div><p class="muted" id="eps-arm-calculated-rate" aria-live="polite"></p>
 <div class="eps-fields"><label>Armierungsmörtel – Sackgröße (kg)<select id="eps-arm-bag" style="padding:9px;border-radius:7px"><option value="20">20 kg</option><option value="25">25 kg</option><option value="30">30 kg</option><option value="40">40 kg</option><option value="50">50 kg</option><option value="custom">Andere Sackgröße</option></select></label><label id="eps-arm-custom-wrap" hidden>Eigene Sackgröße (kg)<input id="eps-arm-custom-bag" type="number" min="0.1" step="any" value="25"></label></div>
 <p class="muted" id="eps-arm-help" aria-live="polite"></p></div>
 <div class="e-card"><h3>Weitere Materialien und Verpackungen</h3><p class="muted">Die Verbrauchswerte sind Planungsannahmen, keine verbindlichen Systemwerte.</p><div class="eps-fields" id="eps-material-fields"></div></div>
@@ -1362,7 +1362,7 @@
 const key='baurechner-wdvs-v1';
 const specs=[
 ['boardL','Plattenlänge (cm)',100],['boardW','Plattenbreite (cm)',50],['thickness','Dämmstärke (cm)',10],['waste','Plattenverschnitt (%)',10],
-['glueRate','Klebemörtel – Verbrauch (kg/m²)',5],['armRate','Armierungsmörtel (kg/m²)',5],['mortarBag','Klebemörtel – Sackgröße (kg)',25],['meshOverlap','Gewebe-Zuschlag (%)',10],['meshRoll','Geweberolle (m²)',50],['dowelRate','Dübel pro m²',6],['primerRate','Putzgrund (kg/m²)',0.3],['primerBucket','Putzgrund-Gebinde (kg)',20],['plasterRate','Oberputz (kg/m²)',2.5],['plasterBucket','Oberputz-Gebinde (kg)',25],
+['glueRate','Klebemörtel – Verbrauch (kg/m²)',5],['mortarBag','Klebemörtel – Sackgröße (kg)',25],['meshOverlap','Gewebe-Zuschlag (%)',10],['meshRoll','Geweberolle (m²)',50],['dowelRate','Dübel pro m²',6],['primerRate','Putzgrund (kg/m²)',0.3],['primerBucket','Putzgrund-Gebinde (kg)',20],['plasterRate','Oberputz (kg/m²)',2.5],['plasterBucket','Oberputz-Gebinde (kg)',25],
 ['cornerLength','Eckschutzschienen gesamt (m)',0],['cornerBar','Eckschutzschiene je Stück (m)',2.5],['baseLength','Sockelprofil gesamt (m)',0],['baseBar','Sockelprofil je Stück (m)',2.5],['windowLength','Fensteranschlussprofile gesamt (m)',0],['windowBar','Fensterprofil je Stück (m)',2.5]];
 let state;try{state=JSON.parse(localStorage.getItem(key)||'null')}catch(e){};if(!state||!Array.isArray(state.walls))state={walls:[{name:'Wand 1',length:5,height1:3,height2:2.7}],openings:[],values:{}};
 const $=id=>document.getElementById(id),num=v=>Math.max(0,Number(String(v).replace(',','.'))||0),v=id=>num(state.values[id]??specs.find(x=>x[0]===id)?.[2]??0),ceil=(a,b)=>b>0?Math.ceil(a/b):0,fmt=n=>Number(n).toLocaleString('de-DE',{maximumFractionDigits:2});
@@ -1389,26 +1389,30 @@ function syncGlueRateControl(){
 }
 syncGlueRateControl();
 // Independent armouring mortar controls; migrate the old shared sack size once.
-const STANDARD_ARM_RATE=5, STANDARD_ARM_BAG=25;
+const STANDARD_ARM_RATE=6, STANDARD_ARM_BAG=25;
+if(state.values.armLayerMm===undefined)state.values.armLayerMm=4;
+if(state.values.armPerMm===undefined)state.values.armPerMm=1.4;
 state.armMode=state.armMode==='estimate'?'estimate':'standard';
 if(state.values.armBag===undefined)state.values.armBag=state.values.mortarBag??STANDARD_ARM_BAG;
 const armMode=$('eps-arm-mode'),armBag=$('eps-arm-bag'),armCustomWrap=$('eps-arm-custom-wrap'),armCustom=$('eps-arm-custom-bag');
-const armRateInput=$('eps-arm-rate-field').querySelector('input');
-const armRateLabel=$('eps-arm-rate-field').querySelector('label');
+const armLayer=$('eps-arm-layer-mm'),armPerMm=$('eps-arm-per-mm'),armThicknessFields=$('eps-arm-thickness-fields');
+armLayer.value=state.values.armLayerMm;armPerMm.value=state.values.armPerMm;
+armLayer.addEventListener('input',e=>{state.values.armLayerMm=num(e.target.value);save();calculate()});
+armPerMm.addEventListener('input',e=>{state.values.armPerMm=num(e.target.value);save();calculate()});
+const armConsumption=()=>state.armMode==='estimate'?num(state.values.armLayerMm)*num(state.values.armPerMm):STANDARD_ARM_RATE;
 const armBagValue=()=>Math.max(0,num(state.values.armBag??STANDARD_ARM_BAG));
 function syncArmControls(){
  const advanced=state.armMode==='estimate',bag=armBagValue();
  armMode.value=state.armMode;
- armRateInput.disabled=!advanced;
- if(document.activeElement!==armRateInput||!advanced)armRateInput.value=advanced?v('armRate'):STANDARD_ARM_RATE;
- armRateLabel.firstChild.textContent=advanced?'Individueller Armierungsmörtelverbrauch (kg/m²)':'Armierungsmörtel – fester Standardwert (kg/m²)';
+ armThicknessFields.hidden=!advanced;
+ $('eps-arm-calculated-rate').textContent=advanced?`Ermittelter Verbrauch: ${fmt(armConsumption())} kg/m² (${fmt(num(state.values.armLayerMm))} mm × ${fmt(num(state.values.armPerMm))} kg/m² je mm). Berechnung auf Basis der bereits ermittelten Netto-Wandfläche.`:`Fester Standardverbrauch: ${fmt(STANDARD_ARM_RATE)} kg/m² auf Basis der bereits ermittelten Netto-Wandfläche.`;
  armBag.disabled=false;
  const preset=['20','25','30','40','50'].includes(String(bag));
  armBag.value=preset?String(bag):'custom';
  armCustomWrap.hidden=preset;
  armCustom.disabled=preset;
  if(document.activeElement!==armCustom)armCustom.value=bag;
- $('eps-arm-help').textContent=advanced?'Verbrauch und Sackgröße frei anpassbar. Die benötigte Sackanzahl wird auf volle Säcke aufgerundet. Herstellerangaben zur Schichtdicke und zum Verbrauch beachten.':'Fester Verbrauch: 5 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar, auch im Standardmodus.';
+ $('eps-arm-help').textContent=advanced?'Schichtdicke und Produktverbrauch je mm bestimmen automatisch den kg/m²-Wert. Die Sackanzahl wird aufgerundet. Zulässige Schichtdicke und Verbrauch laut technischem Merkblatt beachten.':'Fester Richtwert: 6 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar, auch im Standardmodus.';
 }
 armMode.addEventListener('change',e=>{state.armMode=e.target.value;save();calculate()});
 armBag.addEventListener('change',e=>{if(e.target.value==='custom'){state.values.armBag=armBagValue()||25;armCustom.value=state.values.armBag;}else state.values.armBag=Number(e.target.value);save();calculate();if(e.target.value==='custom'){armBag.value='custom';armCustomWrap.hidden=false;armCustom.disabled=false;armCustom.focus()}});
@@ -1442,12 +1446,12 @@ $('eps-cut-wrap').hidden=!estimated;
 $('eps-cut-help').hidden=!estimated;
 $('eps-glue-mode-help').textContent=estimated?'Bei kleineren oder zugeschnittenen Styroporplatten entstehen mehr Plattenränder. Da jede Platte rundherum einen Klebewulst erhält, kann dadurch der Kleberverbrauch steigen. Der Rechner schätzt den zusätzlichen Bedarf anhand der Plattengröße und des Anteils zugeschnittener Platten.':'Der Kleberbedarf wird mit dem festen Standardwert von 5 kg/m² berechnet, unabhängig von Plattengröße und Zuschnitten.';
 $('eps-glue-explanation').textContent=estimated?`Geschätzter Verbrauch: ${fmt(glueRate)} kg/m². Dies ist eine vereinfachte Schätzung. Der tatsächliche Kleberverbrauch kann abweichen; Herstellerangaben beachten und Bedarf durch Probeauftrag prüfen.`:`Berechnung mit dem festen Richtwert ${fmt(STANDARD_GLUE_RATE)} kg/m², unabhängig vom Plattenformat.`;
-let items=[['EPS-Platten',boards,'Stück',null,''],['Klebemörtel',net*glueRate,'kg',ceil(net*glueRate,v('mortarBag')),'Säcke'],['Armierungsmörtel',net*(state.armMode==='estimate'?v('armRate'):STANDARD_ARM_RATE),'kg',ceil(net*(state.armMode==='estimate'?v('armRate'):STANDARD_ARM_RATE),armBagValue()),'Säcke'],['Armierungsgewebe',net*(1+v('meshOverlap')/100),'m²',ceil(net*(1+v('meshOverlap')/100),v('meshRoll')),'Rollen'],['Dämmstoffdübel',Math.ceil(net*v('dowelRate')),'Stück',null,''],['Putzgrund',net*v('primerRate'),'kg',ceil(net*v('primerRate'),v('primerBucket')),'Gebinde'],['Oberputz',net*v('plasterRate'),'kg',ceil(net*v('plasterRate'),v('plasterBucket')),'Gebinde'],['Eckschutzschienen',v('cornerLength'),'m',ceil(v('cornerLength'),v('cornerBar')),'Stück'],['Sockelprofile',v('baseLength'),'m',ceil(v('baseLength'),v('baseBar')),'Stück'],['Fensteranschlussprofile',v('windowLength'),'m',ceil(v('windowLength'),v('windowBar')),'Stück']];
+let items=[['EPS-Platten',boards,'Stück',null,''],['Klebemörtel',net*glueRate,'kg',ceil(net*glueRate,v('mortarBag')),'Säcke'],['Armierungsmörtel',net*armConsumption(),'kg',ceil(net*armConsumption(),armBagValue()),'Säcke'],['Armierungsgewebe',net*(1+v('meshOverlap')/100),'m²',ceil(net*(1+v('meshOverlap')/100),v('meshRoll')),'Rollen'],['Dämmstoffdübel',Math.ceil(net*v('dowelRate')),'Stück',null,''],['Putzgrund',net*v('primerRate'),'kg',ceil(net*v('primerRate'),v('primerBucket')),'Gebinde'],['Oberputz',net*v('plasterRate'),'kg',ceil(net*v('plasterRate'),v('plasterBucket')),'Gebinde'],['Eckschutzschienen',v('cornerLength'),'m',ceil(v('cornerLength'),v('cornerBar')),'Stück'],['Sockelprofile',v('baseLength'),'m',ceil(v('baseLength'),v('baseBar')),'Stück'],['Fensteranschlussprofile',v('windowLength'),'m',ceil(v('windowLength'),v('windowBar')),'Stück']];
 let rows=items.map(x=>`<tr><td>${x[0]}</td><td>${fmt(x[1])} ${x[2]}</td><td>${x[3]===null?'—':x[3]+' '+x[4]}</td></tr>`).join('');$('eps-results').innerHTML=`<p><strong>Bruttofläche:</strong> ${fmt(gross)} m² · <strong>Öffnungen:</strong> ${fmt(open)} m² · <strong>Nettofläche:</strong> ${fmt(net)} m²</p><p><strong>Dämmstärke:</strong> ${fmt(v('thickness'))} cm</p><table class="eps-table"><thead><tr><th>Material</th><th>Bedarf</th><th>Einkauf</th></tr></thead><tbody>${rows}</tbody></table><p class="muted">Keine automatische Prüfung von WDVS-Systemzulassung, Dübelbemessung oder Brandschutz.</p>`;
 clipboard=`Außendämmung / WDVS\nNettofläche: ${fmt(net)} m²\n`+items.map(x=>`${x[0]}: ${fmt(x[1])} ${x[2]} / ${x[3]===null?'':`Einkauf: ${x[3]} ${x[4]}`}`).join('\n');$('nav-eps-summary').textContent=`▤ Außendämmung: ${fmt(net)} m² · ${boards} EPS-Platten`;}
 $('eps-copy').onclick=()=>{if(navigator.clipboard)navigator.clipboard.writeText(clipboard).then(()=>{$('eps-copy').textContent='Kopiert ✓'}).catch(()=>{prompt('Materialliste kopieren:',clipboard)});else prompt('Materialliste kopieren:',clipboard)};
 $('eps-open').addEventListener('click',()=>{ $('dashboard').hidden=true;$('module-navigation').hidden=false;$('nav-module-title').textContent='Außendämmung / WDVS';$('wall').hidden=true;$('cable').hidden=true;$('eps-panel').hidden=false;document.querySelector('.tabs').hidden=true;window.scrollTo(0,0)});
-document.querySelectorAll('[data-open-module]').forEach(b=>b.addEventListener('click',()=>{$('eps-panel').hidden=true}));$('nav-home').addEventListener('click',()=>{$('eps-panel').hidden=true});$('reset-all-analysis').addEventListener('click',()=>{localStorage.removeItem(key);state={walls:[],openings:[],values:{},glueMode:'standard',cutShare:0,armMode:'standard'};$('eps-glue-mode').value='standard';$('eps-cut-share').value=0;glueRateInput.value=STANDARD_GLUE_RATE;renderLines('walls');renderLines('openings');calculate()});renderLines('walls');renderLines('openings');calculate();
+document.querySelectorAll('[data-open-module]').forEach(b=>b.addEventListener('click',()=>{$('eps-panel').hidden=true}));$('nav-home').addEventListener('click',()=>{$('eps-panel').hidden=true});$('reset-all-analysis').addEventListener('click',()=>{localStorage.removeItem(key);state={walls:[],openings:[],values:{},glueMode:'standard',cutShare:0,armMode:'standard'};$('eps-glue-mode').value='standard';$('eps-cut-share').value=0;glueRateInput.value=STANDARD_GLUE_RATE;state.values.armLayerMm=4;state.values.armPerMm=1.4;armLayer.value=4;armPerMm.value=1.4;renderLines('walls');renderLines('openings');calculate()});renderLines('walls');renderLines('openings');calculate();
 })();
 </script>
 </body>
