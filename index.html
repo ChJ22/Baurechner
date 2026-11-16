@@ -1428,7 +1428,7 @@ function syncGlueBag(){
 glueBagSelect.addEventListener('change',e=>{
  state.glueBagCustom=e.target.value==='custom';
  if(!state.glueBagCustom)state.values.mortarBag=Number(e.target.value);
- save();calculate();
+ syncGlueBag();save();calculate();
  if(state.glueBagCustom){glueCustomInput.focus();glueCustomInput.select();}
 });
 glueCustomInput.addEventListener('input',e=>{state.values.mortarBag=num(e.target.value);save();calculate()});
@@ -1461,7 +1461,7 @@ function syncArmControls(){
  $('eps-arm-help').textContent=advanced?'Schichtdicke und Produktverbrauch je mm bestimmen automatisch den kg/m²-Wert. Die Sackanzahl wird aufgerundet. Zulässige Schichtdicke und Verbrauch laut technischem Merkblatt beachten.':'Fester Richtwert: 6 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar, auch im Standardmodus.';
 }
 armMode.addEventListener('change',e=>{state.armMode=e.target.value;save();calculate()});
-armBag.addEventListener('change',e=>{state.armBagCustom=e.target.value==='custom';if(!state.armBagCustom)state.values.armBag=Number(e.target.value);save();calculate();if(state.armBagCustom){armCustom.focus();armCustom.select()}});
+armBag.addEventListener('change',e=>{state.armBagCustom=e.target.value==='custom';if(!state.armBagCustom)state.values.armBag=Number(e.target.value);syncArmControls();save();calculate();if(state.armBagCustom){armCustom.focus();armCustom.select()}});
 armCustom.addEventListener('input',e=>{state.values.armBag=num(e.target.value);save();calculate()});
 syncArmControls();
 // Armierungsgewebe: separate, persistente Einstellungen; alte Gewebezuschläge nur als Migration.
@@ -1525,7 +1525,7 @@ $('eps-import-walls').addEventListener('click',()=>{
 $('eps-add-wall').onclick=()=>{state.walls.push({name:'Wand '+(state.walls.length+1),length:0,height1:0,height2:0});save();renderLines('walls');calculate()};$('eps-add-opening').onclick=()=>{state.openings.push({name:'Fenster / Tür',width:0,height:0,count:1});save();renderLines('openings');calculate()};
 let clipboard='';function calculate(){let gross=state.walls.reduce((s,w)=>s+num(w.length)*(num(w.height1)+num(w.height2))/2,0),open=state.openings.reduce((s,o)=>s+num(o.width)*num(o.height)*num(o.count),0),net=Math.max(0,gross-open),boards=ceil(net*(1+v('waste')/100),v('boardL')*v('boardW')/10000);
 let glueRate=currentGlueRate();
-syncGlueRateControl();syncArmControls();syncDowelControls();syncMeshControls();
+syncGlueRateControl();syncGlueBag();syncArmControls();syncDowelControls();syncMeshControls();
 $('eps-glue-mode-help').textContent=state.glueMode==='estimate'?'Der vorgeschlagene Wert kann individuell überschrieben werden. Für jede Kombination aus Material und Verfahren wird der eigene Wert separat gespeichert.':'Standardwert ist ein unverbindlicher Richtwert und nicht editierbar.';
 $('eps-glue-explanation').textContent=`Verbrauch: ${fmt(glueRate)} kg/m² · ${state.glueMethod==='rand'?'Randwulst-Punkt-Verfahren':state.glueMethod==='voll'?'Vollflächig (Zahntraufel)':'Maschineller Auftrag'}. Der tatsächliche Bedarf hängt von Produkt, Untergrund und Systemvorgaben ab.`;
 const boardArea=v('boardL')*v('boardW')/10000;
