@@ -1379,6 +1379,7 @@ const key='baurechner-wdvs-v1';
 const specs=[
 ['boardL','Plattenlänge (cm)',100],['boardW','Plattenbreite (cm)',50],['thickness','Dämmstärke (cm)',10],['waste','Plattenverschnitt (%)',10],
 ['glueRate','Kleberverbrauch (kg/m²)',5],
+['glueRate','Kleberverbrauch (kg/m²)',5],
 ['primerRate','Putzgrund (kg/m²)',0.3],['primerBucket','Putzgrund-Gebinde (kg)',20],['plasterRate','Oberputz (kg/m²)',2.5],['plasterBucket','Oberputz-Gebinde (kg)',25],
 ['cornerLength','Eckschutzschienen gesamt (m)',0],['cornerBar','Eckschutzschiene je Stück (m)',2.5],['baseLength','Sockelprofil gesamt (m)',0],['baseBar','Sockelprofil je Stück (m)',2.5],['windowLength','Fensteranschlussprofile gesamt (m)',0],['windowBar','Fensterprofil je Stück (m)',2.5]];
 let state;try{state=JSON.parse(localStorage.getItem(key)||'null')}catch(e){};if(!state||!Array.isArray(state.walls))state={walls:[{name:'Wand 1',length:5,height1:3,height2:2.7}],openings:[],values:{}};
