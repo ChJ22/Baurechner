@@ -1354,8 +1354,10 @@
 <p class="muted">Hinweis: 3 Dübel je 100 × 50 cm Platte entsprechen rechnerisch 6 Dübeln/m². Tatsächliche Dübelanzahl und Anordnung nach Windlast, Untergrund und Systemzulassung bemessen; Dübel können auch an Plattenstößen sitzen.</p></div>
 </div>
 <div class="e-card"><h3>Armierungsmörtel &amp; Armierungsgewebe</h3>
-<p class="muted">Verbrauch und Sackgröße werden gemeinsam berechnet. Standard: 6 kg/m². Erweitert: Verbrauch aus Schichtdicke und produktspezifischem Faktor. Grundlage ist immer die bereits ermittelte Nettofläche der Wände (Öffnungen sind schon abgezogen). Die Sackgröße ist in beiden Modi frei wählbar.</p>
-<div class="eps-fields"><label>Berechnungsart<select id="eps-arm-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (6 kg/m² · Sackgröße wählbar)</option><option value="estimate">Erweiterte Berechnung – Schichtdicke</option></select></label></div>
+<p class="muted">Verbrauch und Sackgröße werden gemeinsam berechnet. Standard: 6 kg/m². Schätzprofile: vorausgewählte Schichtdicken mit einem Richtwert von 1,4 kg/(m²·mm). Erweitert: eigene Schichtdicke und eigener Verbrauchsfaktor. Grundlage ist immer die bereits ermittelte Nettofläche der Wände (Öffnungen sind schon abgezogen). Die Sackgröße ist in beiden Modi frei wählbar.</p>
+<div class="eps-fields"><label>Berechnungsart<select id="eps-arm-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (6 kg/m² · Sackgröße wählbar)</option><option value="profiles">Schätzprofile – Armierungsart wählen</option><option value="estimate">Erweitert – eigene Werte</option></select></label></div>
+<div class="eps-fields" id="eps-arm-profile-fields" hidden><label>Armierungsart<select id="eps-arm-profile"><option value="3">Dünnschichtarmierung – 3 mm</option><option value="4">Standardarmierung EPS – 4 mm</option><option value="5">Dickschichtarmierung – 5 mm</option><option value="6">Verstärkte Armierung – 6 mm</option></select></label></div>
+<div class="eps-fields"><label>Materialreserve Armierungsmörtel<select id="eps-arm-reserve"><option value="0">Keine Reserve (0 %)</option><option value="5">5 % Reserve</option><option value="10">10 % Reserve</option></select></label></div>
 <div class="eps-fields" id="eps-arm-thickness-fields"><label>Armierungsschichtdicke (mm)<input id="eps-arm-layer-mm" type="number" min="0.1" step="0.5" value="4"></label><label>Produktverbrauch (kg/m² je mm)<input id="eps-arm-per-mm" type="number" min="0.01" step="0.1" value="1.4"></label></div><p class="muted" id="eps-arm-calculated-rate" aria-live="polite"></p>
 <div class="eps-fields"><label>Armierungsmörtel – Sackgröße (kg)<select id="eps-arm-bag" style="padding:9px;border-radius:7px"><option value="20">20 kg</option><option value="25">25 kg</option><option value="30">30 kg</option><option value="40">40 kg</option><option value="50">50 kg</option><option value="custom">Andere Sackgröße</option></select></label><label id="eps-arm-custom-wrap" hidden>Eigene Sackgröße (kg)<input id="eps-arm-custom-bag" type="number" min="0.1" step="any" value="25"></label></div>
 <p class="muted" id="eps-arm-help" aria-live="polite"></p>
@@ -1437,7 +1439,13 @@ syncGlueBag();
 const STANDARD_ARM_RATE=6, STANDARD_ARM_BAG=25;
 if(state.values.armLayerMm===undefined)state.values.armLayerMm=4;
 if(state.values.armPerMm===undefined)state.values.armPerMm=1.4;
-state.armMode=state.armMode==='estimate'?'estimate':'standard';
+state.armMode=['standard','profiles','estimate'].includes(state.armMode)?state.armMode:'standard';
+if(![3,4,5,6].includes(Number(state.armProfile)))state.armProfile=4;
+if(![0,5,10].includes(Number(state.armReserve)))state.armReserve=0;
+const armProfile=$('eps-arm-profile'),armReserve=$('eps-arm-reserve');
+armProfile.value=String(state.armProfile);armReserve.value=String(state.armReserve);
+armProfile.addEventListener('change',e=>{state.armProfile=Number(e.target.value);save();calculate()});
+armReserve.addEventListener('change',e=>{state.armReserve=Number(e.target.value);save();calculate()});
 if(state.values.armBag===undefined)state.values.armBag=state.values.mortarBag??STANDARD_ARM_BAG;
 state.armBagCustom=state.armBagCustom===true || !['20','25','30','40','50'].includes(String(state.values.armBag));
 const armMode=$('eps-arm-mode'),armBag=$('eps-arm-bag'),armCustomWrap=$('eps-arm-custom-wrap'),armCustom=$('eps-arm-custom-bag');
@@ -1445,20 +1453,22 @@ const armLayer=$('eps-arm-layer-mm'),armPerMm=$('eps-arm-per-mm'),armThicknessFi
 armLayer.value=state.values.armLayerMm;armPerMm.value=state.values.armPerMm;
 armLayer.addEventListener('input',e=>{state.values.armLayerMm=num(e.target.value);save();calculate()});
 armPerMm.addEventListener('input',e=>{state.values.armPerMm=num(e.target.value);save();calculate()});
-const armConsumption=()=>state.armMode==='estimate'?num(state.values.armLayerMm)*num(state.values.armPerMm):STANDARD_ARM_RATE;
+const armConsumption=()=>state.armMode==='estimate'?num(state.values.armLayerMm)*num(state.values.armPerMm):state.armMode==='profiles'?Number(state.armProfile)*1.4:STANDARD_ARM_RATE;
+const armTotalRate=()=>armConsumption()*(1+Number(state.armReserve)/100);
 const armBagValue=()=>Math.max(0,num(state.values.armBag??STANDARD_ARM_BAG));
 function syncArmControls(){
- const advanced=state.armMode==='estimate',bag=armBagValue();
+ const advanced=state.armMode==='estimate',profiles=state.armMode==='profiles',bag=armBagValue();
  armMode.value=state.armMode;
  armThicknessFields.hidden=!advanced;
- $('eps-arm-calculated-rate').textContent=advanced?`Ermittelter Verbrauch: ${fmt(armConsumption())} kg/m² (${fmt(num(state.values.armLayerMm))} mm × ${fmt(num(state.values.armPerMm))} kg/m² je mm). Berechnung auf Basis der bereits ermittelten Netto-Wandfläche.`:`Fester Standardverbrauch: ${fmt(STANDARD_ARM_RATE)} kg/m² auf Basis der bereits ermittelten Netto-Wandfläche.`;
+ $('eps-arm-profile-fields').hidden=!profiles;armProfile.value=String(state.armProfile);armReserve.value=String(state.armReserve);
+ $('eps-arm-calculated-rate').textContent=(advanced?`Ermittelter Verbrauch: ${fmt(armConsumption())} kg/m² (${fmt(num(state.values.armLayerMm))} mm × ${fmt(num(state.values.armPerMm))} kg/(m²·mm)).`:profiles?`Schätzwert: ${fmt(armConsumption())} kg/m² (${state.armProfile} mm × 1,4 kg/(m²·mm)).`:`Fester Standardverbrauch: ${fmt(STANDARD_ARM_RATE)} kg/m².`)+` Mit ${state.armReserve} % Reserve: ${fmt(armTotalRate())} kg/m². Grundlage: Netto-Wandfläche.`;
  armBag.disabled=false;
  const preset=!state.armBagCustom;
  armBag.value=preset?String(bag):'custom';
  armCustomWrap.hidden=preset;
  armCustom.disabled=preset;
  if(document.activeElement!==armCustom)armCustom.value=bag;
- $('eps-arm-help').textContent=advanced?'Schichtdicke und Produktverbrauch je mm bestimmen automatisch den kg/m²-Wert. Die Sackanzahl wird aufgerundet. Zulässige Schichtdicke und Verbrauch laut technischem Merkblatt beachten.':'Fester Richtwert: 6 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar, auch im Standardmodus.';
+ $('eps-arm-help').textContent=advanced?'Eigene Schichtdicke und eigener Verbrauchsfaktor. Herstellerangaben beachten.':profiles?'Unverbindliche Einkaufsabschätzung ohne Datenblatt. Die zulässige Schichtdicke hängt vom WDVS-System ab.':'Fester Richtwert: 6 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar.';
 }
 armMode.addEventListener('change',e=>{state.armMode=e.target.value;save();calculate()});
 armBag.addEventListener('change',e=>{state.armBagCustom=e.target.value==='custom';if(!state.armBagCustom)state.values.armBag=Number(e.target.value);syncArmControls();save();calculate();if(state.armBagCustom){armCustom.focus();armCustom.select()}});
@@ -1533,7 +1543,7 @@ const installedBoards=boardArea>0?Math.ceil(net/boardArea):0;
 const dowelsPerBoard=state.dowelMode==='custom'?state.dowelsPerBoard:DOWEL_DEFAULT;
 const dowels=installedBoards*dowelsPerBoard;
 const mesh=meshNeeds(net);
-let items=[['EPS-Platten',boards,'Stück',null,''],[state.glueMaterial==='mineral'?'Mineralischer Klebemörtel':'Styroporkleber (EPS-Kleber)',net*glueRate,'kg',ceil(net*glueRate,v('mortarBag')),'Säcke'],['Armierungsmörtel',net*armConsumption(),'kg',ceil(net*armConsumption(),armBagValue()),'Säcke'],['Armierungsgewebe',mesh.valid?mesh.total:0,'m²',mesh.valid?mesh.rolls:null,'Rollen'],['Dämmstoffdübel',dowels,'Stück',null,''],['Putzgrund',net*v('primerRate'),'kg',ceil(net*v('primerRate'),v('primerBucket')),'Gebinde'],['Oberputz',net*v('plasterRate'),'kg',ceil(net*v('plasterRate'),v('plasterBucket')),'Gebinde'],['Eckschutzschienen',v('cornerLength'),'m',ceil(v('cornerLength'),v('cornerBar')),'Stück'],['Sockelprofile',v('baseLength'),'m',ceil(v('baseLength'),v('baseBar')),'Stück'],['Fensteranschlussprofile',v('windowLength'),'m',ceil(v('windowLength'),v('windowBar')),'Stück']];
+let items=[['EPS-Platten',boards,'Stück',null,''],[state.glueMaterial==='mineral'?'Mineralischer Klebemörtel':'Styroporkleber (EPS-Kleber)',net*glueRate,'kg',ceil(net*glueRate,v('mortarBag')),'Säcke'],['Armierungsmörtel',net*armTotalRate(),'kg',ceil(net*armTotalRate(),armBagValue()),'Säcke'],['Armierungsgewebe',mesh.valid?mesh.total:0,'m²',mesh.valid?mesh.rolls:null,'Rollen'],['Dämmstoffdübel',dowels,'Stück',null,''],['Putzgrund',net*v('primerRate'),'kg',ceil(net*v('primerRate'),v('primerBucket')),'Gebinde'],['Oberputz',net*v('plasterRate'),'kg',ceil(net*v('plasterRate'),v('plasterBucket')),'Gebinde'],['Eckschutzschienen',v('cornerLength'),'m',ceil(v('cornerLength'),v('cornerBar')),'Stück'],['Sockelprofile',v('baseLength'),'m',ceil(v('baseLength'),v('baseBar')),'Stück'],['Fensteranschlussprofile',v('windowLength'),'m',ceil(v('windowLength'),v('windowBar')),'Stück']];
 let rows=items.map(x=>`<tr><td>${x[0]}</td><td>${fmt(x[1])} ${x[2]}</td><td>${x[3]===null?'—':x[3]+' '+x[4]}</td></tr>`).join('');$('eps-results').innerHTML=`<p><strong>Bruttofläche:</strong> ${fmt(gross)} m² · <strong>Öffnungen:</strong> ${fmt(open)} m² · <strong>Nettofläche:</strong> ${fmt(net)} m²</p><p><strong>Dämmstärke:</strong> ${fmt(v('thickness'))} cm</p><table class="eps-table"><thead><tr><th>Material</th><th>Bedarf</th><th>Einkauf</th></tr></thead><tbody>${rows}</tbody></table><p class="muted">Dübel: ${installedBoards} rechnerisch belegte Platten × ${dowelsPerBoard} Dübel/Platte = ${dowels} Stück (ohne Verschnittplatten). Gewebe: ${mesh.valid?`${fmt(mesh.layers)} Lage(n), ${fmt(mesh.overlap)} cm Überlappung, ${fmt(mesh.reserve)} % Reserve, ${fmt(mesh.extra)} m² zusätzliche Armierung`:'ungültige Rollenbreite oder Überlappung – bitte korrigieren'}. Keine automatische Prüfung von WDVS-Systemzulassung, Dübelbemessung oder Brandschutz.</p>`;
 clipboard=`Außendämmung / WDVS\nNettofläche: ${fmt(net)} m²\n`+items.map(x=>`${x[0]}: ${fmt(x[1])} ${x[2]} / ${x[3]===null?'':`Einkauf: ${x[3]} ${x[4]}`}`).join('\n');$('nav-eps-summary').textContent=`▤ Außendämmung: ${fmt(net)} m² · ${boards} EPS-Platten`;}
 $('eps-copy').onclick=()=>{if(navigator.clipboard)navigator.clipboard.writeText(clipboard).then(()=>{$('eps-copy').textContent='Kopiert ✓'}).catch(()=>{prompt('Materialliste kopieren:',clipboard)});else prompt('Materialliste kopieren:',clipboard)};
