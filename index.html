@@ -1358,7 +1358,7 @@
 <div class="eps-fields"><label>Berechnungsart<select id="eps-arm-mode" style="padding:9px;border-radius:7px"><option value="standard">Standardwert (6 kg/m² · Sackgröße wählbar)</option><option value="profiles">Schätzprofile – Armierungsart wählen</option><option value="estimate">Erweitert – eigene Werte</option></select></label></div>
 <div class="eps-fields" id="eps-arm-profile-fields" hidden><label>Armierungsart<select id="eps-arm-profile"><option value="3">Dünnschichtarmierung – 3 mm</option><option value="4">Standardarmierung EPS – 4 mm</option><option value="5">Dickschichtarmierung – 5 mm</option><option value="6">Verstärkte Armierung – 6 mm</option></select></label></div>
 <div class="eps-fields"><label>Materialreserve Armierungsmörtel<select id="eps-arm-reserve"><option value="0">Keine Reserve (0 %)</option><option value="5">5 % Reserve</option><option value="10">10 % Reserve</option></select></label></div>
-<div class="eps-fields" id="eps-arm-thickness-fields"><label>Armierungsschichtdicke (mm)<input id="eps-arm-layer-mm" type="number" min="0.1" step="0.5" value="4"></label><label>Produktverbrauch (kg/m² je mm)<input id="eps-arm-per-mm" type="number" min="0.01" step="0.1" value="1.4"></label></div><p class="muted" id="eps-arm-calculated-rate" aria-live="polite"></p>
+<div class="eps-fields" id="eps-arm-thickness-fields"><label>Armierungsschichtdicke (mm)<input id="eps-arm-layer-mm" type="number" min="0.1" step="0.5" value="4"></label></div><p class="muted" id="eps-arm-calculated-rate" aria-live="polite"></p>
 <div class="eps-fields"><label>Armierungsmörtel – Sackgröße (kg)<select id="eps-arm-bag" style="padding:9px;border-radius:7px"><option value="20">20 kg</option><option value="25">25 kg</option><option value="30">30 kg</option><option value="40">40 kg</option><option value="50">50 kg</option><option value="custom">Andere Sackgröße</option></select></label><label id="eps-arm-custom-wrap" hidden>Eigene Sackgröße (kg)<input id="eps-arm-custom-bag" type="number" min="0.1" step="any" value="25"></label></div>
 <p class="muted" id="eps-arm-help" aria-live="polite"></p>
 <div class="eps-dowel-block"><h4>Armierungsgewebe und Geweberollen</h4><p class="muted">Grundlage ist die bereits ermittelte Netto-Wandfläche. Fenster und Türen werden nicht nochmals abgezogen. Überlappung und Zuschnittreserve werden zusätzlich berücksichtigt.</p>
@@ -1449,11 +1449,12 @@ armReserve.addEventListener('change',e=>{state.armReserve=Number(e.target.value)
 if(state.values.armBag===undefined)state.values.armBag=state.values.mortarBag??STANDARD_ARM_BAG;
 state.armBagCustom=state.armBagCustom===true || !['20','25','30','40','50'].includes(String(state.values.armBag));
 const armMode=$('eps-arm-mode'),armBag=$('eps-arm-bag'),armCustomWrap=$('eps-arm-custom-wrap'),armCustom=$('eps-arm-custom-bag');
-const armLayer=$('eps-arm-layer-mm'),armPerMm=$('eps-arm-per-mm'),armThicknessFields=$('eps-arm-thickness-fields');
-armLayer.value=state.values.armLayerMm;armPerMm.value=state.values.armPerMm;
+const armLayer=$('eps-arm-layer-mm'),armThicknessFields=$('eps-arm-thickness-fields');
+armLayer.value=state.values.armLayerMm;
 armLayer.addEventListener('input',e=>{state.values.armLayerMm=num(e.target.value);save();calculate()});
-armPerMm.addEventListener('input',e=>{state.values.armPerMm=num(e.target.value);save();calculate()});
-const armConsumption=()=>state.armMode==='estimate'?num(state.values.armLayerMm)*num(state.values.armPerMm):state.armMode==='profiles'?Number(state.armProfile)*1.4:STANDARD_ARM_RATE;
+
+const ARM_ESTIMATE_FACTOR=1.4;
+const armConsumption=()=>state.armMode==='estimate'?num(state.values.armLayerMm)*ARM_ESTIMATE_FACTOR:state.armMode==='profiles'?Number(state.armProfile)*1.4:STANDARD_ARM_RATE;
 const armTotalRate=()=>armConsumption()*(1+Number(state.armReserve)/100);
 const armBagValue=()=>Math.max(0,num(state.values.armBag??STANDARD_ARM_BAG));
 function syncArmControls(){
@@ -1461,14 +1462,14 @@ function syncArmControls(){
  armMode.value=state.armMode;
  armThicknessFields.hidden=!advanced;
  $('eps-arm-profile-fields').hidden=!profiles;armProfile.value=String(state.armProfile);armReserve.value=String(state.armReserve);
- $('eps-arm-calculated-rate').textContent=(advanced?`Ermittelter Verbrauch: ${fmt(armConsumption())} kg/m² (${fmt(num(state.values.armLayerMm))} mm × ${fmt(num(state.values.armPerMm))} kg/(m²·mm)).`:profiles?`Schätzwert: ${fmt(armConsumption())} kg/m² (${state.armProfile} mm × 1,4 kg/(m²·mm)).`:`Fester Standardverbrauch: ${fmt(STANDARD_ARM_RATE)} kg/m².`)+` Mit ${state.armReserve} % Reserve: ${fmt(armTotalRate())} kg/m². Grundlage: Netto-Wandfläche.`;
+ $('eps-arm-calculated-rate').textContent=(advanced?`Ermittelter Verbrauch: ${fmt(armConsumption())} kg/m² (${fmt(num(state.values.armLayerMm))} mm × ${fmt(ARM_ESTIMATE_FACTOR)} kg/(m²·mm)).`:profiles?`Schätzwert: ${fmt(armConsumption())} kg/m² (${state.armProfile} mm × 1,4 kg/(m²·mm)).`:`Fester Standardverbrauch: ${fmt(STANDARD_ARM_RATE)} kg/m².`)+` Mit ${state.armReserve} % Reserve: ${fmt(armTotalRate())} kg/m². Grundlage: Netto-Wandfläche.`;
  armBag.disabled=false;
  const preset=!state.armBagCustom;
  armBag.value=preset?String(bag):'custom';
  armCustomWrap.hidden=preset;
  armCustom.disabled=preset;
  if(document.activeElement!==armCustom)armCustom.value=bag;
- $('eps-arm-help').textContent=advanced?'Eigene Schichtdicke und eigener Verbrauchsfaktor. Herstellerangaben beachten.':profiles?'Unverbindliche Einkaufsabschätzung ohne Datenblatt. Die zulässige Schichtdicke hängt vom WDVS-System ab.':'Fester Richtwert: 6 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar.';
+ $('eps-arm-help').textContent=advanced?'Nur die Schichtdicke eingeben. Der Baurechner schätzt den Verbrauch automatisch mit durchschnittlich 1,4 kg/(m²·mm). Herstellerangaben können abweichen.':profiles?'Unverbindliche Einkaufsabschätzung ohne Datenblatt. Die zulässige Schichtdicke hängt vom WDVS-System ab.':'Fester Richtwert: 6 kg/m² Armierungsmörtel. Die Sackgröße ist frei wählbar.';
 }
 armMode.addEventListener('change',e=>{state.armMode=e.target.value;save();calculate()});
 armBag.addEventListener('change',e=>{state.armBagCustom=e.target.value==='custom';if(!state.armBagCustom)state.values.armBag=Number(e.target.value);syncArmControls();save();calculate();if(state.armBagCustom){armCustom.focus();armCustom.select()}});
