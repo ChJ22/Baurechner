@@ -1383,6 +1383,78 @@
 <div class="e-card"><h3>Materialbedarf</h3><div id="eps-results" aria-live="polite"></div><button type="button" id="eps-copy">Materialliste kopieren</button></div>
 </div></section>
 <style>
+/* Kompakte, schrittweise WDVS-Eingabe */
+#eps-panel .eps-steps{display:grid;gap:10px;margin:18px 0}
+#eps-panel .eps-step{border:1px solid var(--border,#d9e0e7);border-radius:13px;background:var(--card,#fff);overflow:hidden}
+#eps-panel .eps-step>summary{display:flex;align-items:center;gap:12px;cursor:pointer;padding:15px 16px;list-style:none;user-select:none}
+#eps-panel .eps-step>summary::-webkit-details-marker{display:none}
+#eps-panel .eps-step>summary:focus-visible{outline:3px solid #3979ce;outline-offset:-3px}
+#eps-panel .eps-step-number{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:9px;background:rgba(110,130,155,.13);font-weight:700}
+#eps-panel .eps-step-title{display:block;font-weight:700}
+#eps-panel .eps-step-hint{display:block;font-size:.83em;opacity:.73;margin-top:3px;line-height:1.35}
+#eps-panel .eps-step-arrow{margin-left:auto;font-size:1.2em;opacity:.7;transition:transform .15s}
+#eps-panel .eps-step[open] .eps-step-arrow{transform:rotate(180deg)}
+#eps-panel .eps-step[open]>summary{border-bottom:1px solid var(--border,#d9e0e7)}
+#eps-panel .eps-step-body{padding:2px 14px 14px}
+#eps-panel .eps-step-body>.e-card{margin:12px 0;border:0;box-shadow:none;padding:8px 2px;background:transparent}
+#eps-panel .eps-step-body>.e-card h3{font-size:1.04em}
+#eps-panel .eps-step-footer{display:flex;justify-content:flex-end;margin-top:10px}
+#eps-panel .eps-step-next{cursor:pointer;padding:9px 14px;border-radius:9px}
+#eps-panel .eps-step[open]{border-color:var(--primary,#6c92bb)}
+</style>
+<script>
+/* Die bestehenden Formularfelder, IDs, Listener und Berechnungen bleiben unverändert. */
+(function(){
+  const panel=document.getElementById('eps-panel');
+  if(!panel || panel.querySelector('.eps-steps'))return;
+  const inner=panel.querySelector('.panel-inner');
+  if(!inner)return;
+  const cards=Array.from(inner.children).filter(el=>el.classList && el.classList.contains('e-card'));
+  if(cards.length<9)return;
+  const definitions=[
+    {title:'Wandflächen',hint:'Wände aus dem Mauerwerk übernehmen oder eigene Maße und Öffnungen erfassen',items:[0,1]},
+    {title:'EPS-Dämmplatten',hint:'Plattengröße, Dämmstärke und Verschnitt',items:[2]},
+    {title:'Dämmstoffkleber & Dübel',hint:'Verklebung, Sackgrößen und Befestigung',items:[3]},
+    {title:'Armierungsmörtel & Gewebe',hint:'Schichtdicke, Gewebe, Überlappung und Gebinde',items:[4]},
+    {title:'Putzgrund',hint:'Oberfläche, Verbrauch und Gebinde',items:[5]},
+    {title:'Oberputz & Gebinde',hint:'Putzart, Körnung, Bildvorschau und Materialbedarf',items:[6]},
+    {title:'WDVS-Zubehör',hint:'Weitere benötigte Zubehörmaterialien',items:[7]},
+    {title:'Materialübersicht',hint:'Gesamtbedarf ansehen und Einkaufsliste kopieren',items:[8]}
+  ];
+  const holder=document.createElement('div');holder.className='eps-steps';
+  cards[0].before(holder);
+  const steps=[];
+  definitions.forEach((def,i)=>{
+    const step=document.createElement('details');step.className='eps-step';
+    if(i===0)step.open=true;
+    const summary=document.createElement('summary');
+    const num=document.createElement('span');num.className='eps-step-number';num.textContent=String(i+1);
+    const text=document.createElement('span');
+    const title=document.createElement('span');title.className='eps-step-title';title.textContent=def.title;
+    const hint=document.createElement('span');hint.className='eps-step-hint';hint.textContent=def.hint;
+    const arrow=document.createElement('span');arrow.className='eps-step-arrow';arrow.textContent='⌄';arrow.setAttribute('aria-hidden','true');
+    text.append(title,hint);summary.append(num,text,arrow);
+    const body=document.createElement('div');body.className='eps-step-body';
+    def.items.forEach(idx=>body.append(cards[idx]));
+    const footer=document.createElement('div');footer.className='eps-step-footer';
+    if(i<definitions.length-1){
+      const next=document.createElement('button');next.type='button';next.className='eps-step-next';
+      next.textContent='Weiter zum nächsten Schritt →';
+      next.addEventListener('click',()=>{
+        step.open=false;steps[i+1].open=true;
+        steps[i+1].querySelector('summary').focus({preventScroll:true});
+        steps[i+1].scrollIntoView({behavior:'smooth',block:'start'});
+      });footer.append(next);body.append(footer);
+    }
+    step.append(summary,body);holder.append(step);steps.push(step);
+    step.addEventListener('toggle',()=>{
+      if(step.open)steps.forEach(other=>{if(other!==step)other.open=false});
+    });
+  });
+})();
+</script>
+
+<style>
 #eps-panel .e-card{margin:14px 0;padding:16px} #eps-panel .eps-dowel-block{border-top:1px solid #d4dce3;margin-top:18px;padding-top:12px} #eps-panel .eps-dowel-block h4{margin:4px 0 8px} #eps-panel .eps-glue-info{margin:12px 0;border:1px solid #cbd5df;border-radius:9px;padding:10px 12px} #eps-panel .eps-glue-info summary{cursor:pointer;font-weight:600;line-height:1.5} #eps-panel .eps-glue-info-content{padding-top:8px} .glue-guide{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:12px;align-items:center;margin:14px 0}.glue-guide img{width:100%;border-radius:9px}.glue-guide p{margin:5px 0}@media(max-width:540px){.glue-guide{grid-template-columns:1fr}} .eps-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}.eps-fields label,.eps-line label{display:flex;flex-direction:column;gap:5px;font-size:.88rem}.eps-fields input,.eps-line input{width:100%;padding:9px;border:1px solid #aab8c3;border-radius:7px;background:var(--card,#fff);color:#172b3b}.eps-line{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;border-bottom:1px solid #d4dce3;padding:12px 0}.eps-line button{align-self:end}.eps-table{width:100%;border-collapse:collapse}.eps-table td,.eps-table th{padding:8px 5px;border-bottom:1px solid #d5dce2;text-align:left}.eps-table td:last-child{text-align:right}#eps-results{overflow-x:auto}
 #eps-panel .eps-plaster-preview{display:grid;grid-template-columns:minmax(125px,200px) 1fr;gap:14px;align-items:center;margin:14px 0}#eps-panel .eps-plaster-preview img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:9px;border:1px solid #cbd5df}#eps-panel [hidden]{display:none!important}@media(max-width:540px){#eps-panel .eps-plaster-preview{grid-template-columns:1fr}}
 </style>
