@@ -182,6 +182,14 @@
     .nav-shopping-details{padding:.2rem 0 .4rem .65rem;color:#607368;font-size:.86rem}
     .nav-shopping-details p{margin:.15rem 0}
 </style>
+<style>
+.calc-accordion{border:1px solid #d5dfe6;border-radius:13px;margin:12px 0;overflow:hidden;background:var(--card,#fff)}
+.calc-accordion-toggle{width:100%;display:flex;flex-direction:column;align-items:flex-start;position:relative;text-align:left;padding:14px 42px 14px 15px;background:transparent;border:0;color:inherit;cursor:pointer;min-height:64px}
+.calc-accordion-title{font-weight:750;font-size:1rem}.calc-accordion-subtitle{font-size:.79rem;opacity:.7;margin-top:4px}.calc-accordion-arrow{position:absolute;right:16px;top:19px;font-size:22px;transition:transform .18s}
+.calc-accordion-toggle[aria-expanded="true"] .calc-accordion-arrow{transform:rotate(180deg)}
+.calc-accordion-content{padding:0 14px 14px}.calc-accordion-content[hidden]{display:none!important}.calc-accordion-next{text-align:right;margin-top:14px}.calc-accordion-next-button{border:1px solid #a4b9c9;background:#eaf4fa;color:#164d69;border-radius:9px;padding:10px 13px;font-weight:650;cursor:pointer}
+.calc-accordion-content .e-card{margin-top:4px}.calc-accordion-content .fields{max-width:100%}
+</style>
 </head>
 <body>
   <header><div class="wrap brand"><span class="brand-mark" aria-hidden="true">▦</span><span>Baurechner<small class="brand-tagline">Planen. Berechnen. Bauen.</small></span><span class="design-chip">Designvorschau</span></div></header>
@@ -208,7 +216,7 @@
       <div class="panel-inner">
         <h2>Mauerwerk</h2>
         <p class="muted">Berechne das Volumen der geplanten Mauer oder die theoretische Anzahl der Steine.</p>
-        <p class="mode-label">Was möchtest du berechnen?</p>
+        <section class="calc-accordion" data-accordion-group="wall" data-initial-open="true"><button class="calc-accordion-toggle" type="button" aria-expanded="true"><span class="calc-accordion-title">1. Berechnungsart und Wandmaße</span><span class="calc-accordion-subtitle">Wandvolumen oder Steinzahl, Länge, Höhe und Dicke</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content"><p class="mode-label">Was möchtest du berechnen?</p>
         <div class="modes" aria-label="Berechnungsart"><button class="mode" id="mode-volume" type="button" aria-pressed="true">Wandvolumen</button><button class="mode" id="mode-stones" type="button" aria-pressed="false">Anzahl der Steine</button></div>
         <div class="workspace">
           <form id="calculator" novalidate>
@@ -218,15 +226,17 @@
               <label class="field" for="width"><span>Breite / Wanddicke</span><div class="input-wrap"><input id="width" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,30" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
               <label class="field" for="height"><span>Höhe</span><div class="input-wrap"><input id="height" inputmode="decimal" autocomplete="off" placeholder="z. B. 2,50" aria-describedby="error"><span class="suffix" aria-hidden="true">m</span></div></label>
             </div>
-            <div class="openings">
+            <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<section class="calc-accordion" data-accordion-group="wall"><button class="calc-accordion-toggle" type="button" aria-expanded="false"><span class="calc-accordion-title">2. Fenster und Türen</span><span class="calc-accordion-subtitle">Öffnungen von der Wandfläche abziehen</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content" hidden><div class="openings">
               <h3>Fenster und Türen abziehen</h3>
               <p class="muted">Je Öffnung nur Länge und Höhe eingeben. Die Tiefe entspricht automatisch der Wanddicke. Öffnungen dürfen sich nicht überlappen.</p>
               <div id="opening-items"></div>
               <div class="opening-actions"><button type="button" id="add-window">+ Fenster</button><button type="button" id="add-door">+ Tür</button></div>
             </div>
-            <button class="add-wall" id="add-wall" type="button">Wand speichern und weitere hinzufügen</button>
+            <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<button class="add-wall" id="add-wall" type="button">Wand speichern und weitere hinzufügen</button>
             <button class="cancel-edit" id="cancel-edit" type="button" hidden>Bearbeiten abbrechen</button>
-            <div class="stone-fields" id="stone-fields" hidden>
+            <section class="calc-accordion" data-accordion-group="wall"><button class="calc-accordion-toggle" type="button" aria-expanded="false"><span class="calc-accordion-title">3. Steine, Bauweise und Mörtel</span><span class="calc-accordion-subtitle">Steinmaße, Fugen und Mörtelbedarf</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content" hidden><div class="stone-fields" id="stone-fields" hidden>
               <h3>Maße eines Steins</h3>
               <p class="muted">Bitte die tatsächlichen Außenmaße des Steins in Zentimetern eingeben.</p>
               <div class="fields">
@@ -266,12 +276,14 @@
                 </div>
               </div>
             </div>
-            <div class="stone-fields">
+            <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<section class="calc-accordion" data-accordion-group="wall"><button class="calc-accordion-toggle" type="button" aria-expanded="false"><span class="calc-accordion-title">5. Verschnitt</span><span class="calc-accordion-subtitle">Verschnittzuschlag festlegen</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content" hidden><div class="stone-fields">
               <h3>Verschnittzuschlag</h3>
               <p class="muted">Ein Prozentsatz für das Mauervolumen und, bei der Steinberechnung, für die Steinzahl. Die Wandmaße bleiben unverändert.</p>
               <label class="field" for="waste-percent"><span>Verschnitt</span><div class="input-wrap"><input id="waste-percent" inputmode="decimal" autocomplete="off" value="0" aria-describedby="error"><span class="suffix" aria-hidden="true">%</span></div></label><input type="range" id="wall-waste-slider" min="0" max="25" step="1" value="10" aria-label="Verschnitt Mauerwerk in Prozent" style="width:100%;accent-color:#247caa;margin-top:10px">
             </div>
-            <p class="error" id="error" role="alert"></p>
+            <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<p class="error" id="error" role="alert"></p>
             <button class="calculate" id="calculate-button" type="submit">Volumen berechnen</button>
           </form>
           <div class="diagram">
@@ -304,16 +316,20 @@
     <section class="panel" id="cable" role="tabpanel" aria-labelledby="tab-cable" hidden>
       <div class="panel-inner electro">
         <h2>Elektroleitungen</h2><p class="muted">Bereiche anlegen, Elektro- und Kabelkanal-Teilstrecken messen und Längen je Typ automatisch addieren.</p>
-        <form id="e-form" class="e-card">
+        <section class="calc-accordion" data-accordion-group="cable" data-initial-open="true"><button class="calc-accordion-toggle" type="button" aria-expanded="true"><span class="calc-accordion-title">1. Bereich und Leitungstyp anlegen</span><span class="calc-accordion-subtitle">Neuen Raum oder Verbraucher erfassen</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content"><form id="e-form" class="e-card">
           <h3>Neuen Bereich anlegen</h3>
           <div class="e-grid"><label>Bereich / Verbraucher<select id="e-area-preset"><option value="">Bitte Bereich auswählen …</option><optgroup label="Wohnräume"><option>Wohnzimmer</option><option>Schlafzimmer</option><option>Kinderzimmer</option><option>Arbeitszimmer</option><option>Flur / Diele</option></optgroup><optgroup label="Versorgung und Nebenräume"><option>Küche</option><option>Badezimmer</option><option>Gäste-WC</option><option>Hauswirtschaftsraum</option><option>Keller</option><option>Garage</option><option>Dachboden</option><option>Außenbereich / Garten</option><option>Verteilung / Technikraum</option></optgroup><option value="custom">Eigener Bereich …</option></select></label>
           <label>Leitungstyp<select id="e-type"><option>NYM-J 3×1,5 mm²</option><option>NYM-J 5×1,5 mm²</option><option>NYM-J 3×2,5 mm²</option><option>NYM-J 5×2,5 mm²</option><option>NYM-J 5×4 mm²</option><option>NYM-J 5×6 mm²</option><option>NYM-J 5×10 mm²</option><option value="custom">Eigener Leitungstyp …</option></select></label></div>
           <label id="e-area-custom-wrap" hidden>Eigenen Bereich eingeben<input id="e-area" placeholder="z. B. Werkstatt – Beleuchtung" maxlength="100"></label><label id="e-custom-wrap" hidden>Eigener Leitungstyp<input id="e-custom" maxlength="80" placeholder="z. B. NYM-J 7×1,5 mm²"></label>
           <button class="calculate" type="submit">+ Bereich anlegen</button><p class="error" id="e-error" role="alert"></p>
         </form>
-        <div class="e-card"><h3>Verschnittzuschlag</h3><p class="muted">Für Leitungen und Kabelführungen getrennt einstellbar. Ausgangswert jeweils 10 %. Der Zuschlag wird in der Materialübersicht berücksichtigt.</p><label for="cable-waste-slider">Elektroleitungen: <strong id="cable-waste-value">10 %</strong></label><input type="range" id="cable-waste-slider" min="0" max="25" step="1" value="10" style="width:100%;accent-color:#247caa"><label for="channel-waste-slider">Kabelführung: <strong id="channel-waste-value">10 %</strong></label><input type="range" id="channel-waste-slider" min="0" max="25" step="1" value="10" style="width:100%;accent-color:#247caa"></div><div id="e-areas"></div>
-        <div class="e-card"><h3>Materialübersicht: Leitungen, Kabelführung und Zusatzmaterial</h3><div id="e-summary" aria-live="polite"></div></div>
-        <p class="muted" style="font-size:.85rem">Nur Mengenermittlung. Keine Prüfung von Strombelastbarkeit, Absicherung oder zulässiger Verlegeart. Elektroinstallationen fachgerecht planen und ausführen lassen.</p>
+        <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<section class="calc-accordion" data-accordion-group="cable"><button class="calc-accordion-toggle" type="button" aria-expanded="false"><span class="calc-accordion-title">2. Bereiche und Teilstrecken</span><span class="calc-accordion-subtitle">Gespeicherte Bereiche und Leitungslängen bearbeiten</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content" hidden><div id="e-areas"></div>
+        <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<section class="calc-accordion" data-accordion-group="cable"><button class="calc-accordion-toggle" type="button" aria-expanded="false"><span class="calc-accordion-title">3. Verschnitt und Kabelführung</span><span class="calc-accordion-subtitle">Zuschläge für Leitungen und Kanäle</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content" hidden><div class="e-card"><h3>Verschnittzuschlag</h3><p class="muted">Für Leitungen und Kabelführungen getrennt einstellbar. Ausgangswert jeweils 10 %. Der Zuschlag wird in der Materialübersicht berücksichtigt.</p><label for="cable-waste-slider">Elektroleitungen: <strong id="cable-waste-value">10 %</strong></label><input type="range" id="cable-waste-slider" min="0" max="25" step="1" value="10" style="width:100%;accent-color:#247caa"><label for="channel-waste-slider">Kabelführung: <strong id="channel-waste-value">10 %</strong></label><input type="range" id="channel-waste-slider" min="0" max="25" step="1" value="10" style="width:100%;accent-color:#247caa"></div><div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<section class="calc-accordion" data-accordion-group="cable"><button class="calc-accordion-toggle" type="button" aria-expanded="false"><span class="calc-accordion-title">4. Materialübersicht</span><span class="calc-accordion-subtitle">Leitungen, Kabelführung und Zusatzmaterial</span><span class="calc-accordion-arrow" aria-hidden="true">⌄</span></button><div class="calc-accordion-content" hidden><div class="e-card"><h3>Materialübersicht: Leitungen, Kabelführung und Zusatzmaterial</h3><div id="e-summary" aria-live="polite"></div></div>
+        <div class="calc-accordion-next"><button type="button" class="calc-accordion-next-button">Weiter zum nächsten Schritt →</button></div></div></section>
+<p class="muted" style="font-size:.85rem">Nur Mengenermittlung. Keine Prüfung von Strombelastbarkeit, Absicherung oder zulässiger Verlegeart. Elektroinstallationen fachgerecht planen und ausführen lassen.</p>
       </div>
     </section>
   </main>
@@ -1703,6 +1719,32 @@ clipboard=`Außendämmung / WDVS\nNettofläche: ${fmt(net)} m²\n`+items.map(x=>
 $('eps-copy').onclick=()=>{if(navigator.clipboard)navigator.clipboard.writeText(clipboard).then(()=>{$('eps-copy').textContent='Kopiert ✓'}).catch(()=>{prompt('Materialliste kopieren:',clipboard)});else prompt('Materialliste kopieren:',clipboard)};
 $('eps-open').addEventListener('click',()=>{ $('dashboard').hidden=true;$('module-navigation').hidden=false;$('nav-module-title').textContent='Außendämmung / WDVS';$('wall').hidden=true;$('cable').hidden=true;$('eps-panel').hidden=false;document.querySelector('.tabs').hidden=true;window.scrollTo(0,0)});
 document.querySelectorAll('[data-open-module]').forEach(b=>b.addEventListener('click',()=>{$('eps-panel').hidden=true}));$('nav-home').addEventListener('click',()=>{$('eps-panel').hidden=true});$('reset-all-analysis').addEventListener('click',()=>{localStorage.removeItem(key);state={walls:[],openings:[],values:{},glueMode:'standard',cutShare:0,armMode:'standard'};$('eps-glue-mode').value='standard';state.glueMaterial='eps';state.glueMethod='rand';state.glueCustomRates={};state.dowelMode='standard';state.dowelsPerBoard=4;$('eps-glue-material').value='eps';$('eps-glue-method').value='rand';glueRateInput.value=GLUE_DEFAULTS.rand;state.values.armLayerMm=4;state.values.armPerMm=1.4;armLayer.value=4;state.meshMode='standard';Object.assign(state.values,meshDefaults);$('eps-mesh-mode').value='standard';for(const [id,elementId] of Object.entries(meshIds))$(elementId).value=state.values[id];for(const [id,label,def] of specs){const container=$(['boardL','boardW','thickness','waste'].includes(id)?'eps-board-fields':['cornerLength','cornerBar','baseLength','baseBar','windowLength','windowBar'].includes(id)?'eps-accessory-fields':id==='glueRate'?'eps-glue-rate-field':'eps-material-fields');const input=[...container.querySelectorAll('label')].find(el=>el.firstChild?.textContent===label)?.querySelector('input');if(input&&id!=='glueRate')input.value=def;}state.plasterProfile='silicone-2';state.plasterPack='25';state.plasterReserve=5;state.plasterCustomName='Eigener Oberputz';state.plasterCustomGrain=2.5;state.plasterCustomRate=3.5;state.plasterCustomKind='Eimer';state.plasterCustomPack=25;for(const [id,value] of [['eps-plaster-custom-name',state.plasterCustomName],['eps-plaster-custom-grain',state.plasterCustomGrain],['eps-plaster-custom-rate',state.plasterCustomRate],['eps-plaster-custom-kind',state.plasterCustomKind],['eps-plaster-pack-custom',state.plasterCustomPack]])$(id).value=value;state.primerProfile='normal';state.primerBucketChoice='20';state.primerReserve=5;state.values.primerCustomRate=0.25;state.values.primerCustomBucket=20;syncPrimerControls();state.glueBagCustom=false;state.armBagCustom=false;state.values.mortarBag=25;state.values.armBag=25;syncGlueBag();syncArmControls();syncDowelControls();syncMeshControls();renderLines('walls');renderLines('openings');calculate()});renderLines('walls');renderLines('openings');calculate();
+})();
+</script>
+<script>
+(function(){
+ function openAccordion(target){
+  var group=target.dataset.accordionGroup;
+  document.querySelectorAll('.calc-accordion[data-accordion-group="'+group+'"]').forEach(function(section){
+   var active=section===target;
+   section.querySelector('.calc-accordion-toggle').setAttribute('aria-expanded',String(active));
+   section.querySelector('.calc-accordion-content').hidden=!active;
+  });
+ }
+ document.querySelectorAll('.calc-accordion').forEach(function(section){
+  var toggle=section.querySelector('.calc-accordion-toggle');
+  toggle.addEventListener('click',function(){
+   if(toggle.getAttribute('aria-expanded')==='true'){
+    toggle.setAttribute('aria-expanded','false');section.querySelector('.calc-accordion-content').hidden=true;
+   }else openAccordion(section);
+  });
+  var next=section.querySelector('.calc-accordion-next-button');
+  next.addEventListener('click',function(){
+   var all=Array.from(document.querySelectorAll('.calc-accordion[data-accordion-group="'+section.dataset.accordionGroup+'"]'));
+   var idx=all.indexOf(section);if(idx+1<all.length){openAccordion(all[idx+1]);all[idx+1].scrollIntoView({behavior:'smooth',block:'start'});}
+  });
+ });
+ // On mode change, the original script controls stone-fields visibility; the accordion stays intact.
 })();
 </script>
 </body>
